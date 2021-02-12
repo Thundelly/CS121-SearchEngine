@@ -81,7 +81,7 @@ class Indexer:
 
         return (self.tokenize(text), self.tokenize(weighted))
 
-    def index(self, filename):
+    def index(self):
         doc_id = 0
 
         for file in self.file_handler.walk_files():
@@ -91,22 +91,9 @@ class Indexer:
                 self.index_list.append('{}, {}, {}, {}\n'.format(word, doc_id, normalText.count(word), word in importantText))
 
 
-
-
-        with open(filename, 'w') as f:
-            for i in self.walk_files():
-                normalText, importantText = self.parse_file(i)
-                count += 1
-                for word in set(normalText):
-                    f.write('{}, {}, {}, {}\n'.format(count, word,
-                                                      normalText.count(word), word in importantText))
-
-
-
-
 if __name__ == '__main__':
     indexer = Indexer()
-    print(indexer.index("word.txt"))
+    print(indexer.index())
 
 
 # parsing

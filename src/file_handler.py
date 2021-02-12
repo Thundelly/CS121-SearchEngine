@@ -3,7 +3,7 @@ import os
 
 class FileHandler:
     def __init__(self):
-        pass
+        pass                
 
     def walk_files(self, folder):
         for path, dirs, files in os.walk(folder, topdown=True):
@@ -12,5 +12,9 @@ class FileHandler:
                     yield path + '/' + filename
 
     def write_to_file(self, index_list):
-        for index in index_list:
-            word = index.split(',', 1)[0]
+        pass
+
+if __name__ == '__main__':
+
+    file_handler = FileHandler()
+    file_handler.write_to_file([])
