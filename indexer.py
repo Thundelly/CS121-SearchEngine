@@ -76,7 +76,7 @@ def tokenize(text):
 
 def parse_file(filename):
     with open(filename, 'r') as f:
-        file_info = json.loads(f)
+        file_info = json.loads(f.read())
         content = file_info['content']
         soup = BeautifulSoup(content, 'lxml')
 
@@ -98,7 +98,8 @@ def index(filename):
             normalText, importantText = parse_file(i)
             count += 1
             for word in set(normalText): 
-                f.write('{}, {}, {}, {}\n'.format(count, word, normalText.count(word), word in importantText))
+                # f.write('{}, {}, {}, {}\n'.format(count, word, normalText.count(word), word in importantText))
+                print()
 
 
 def walk_files(folder):
@@ -108,3 +109,5 @@ def walk_files(folder):
                 yield path + '/' + filename
             
 
+# download_nltk_library()
+# index("word.txt")
