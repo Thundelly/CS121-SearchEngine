@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 class FileHandler:
     def __init__(self):
-        pass
+        pass                
 
     def walk_files(self, folder):
         """
