@@ -1,5 +1,6 @@
 import ssl
 import os
+from pprint import pprint
 
 import nltk
 from nltk.tokenize import RegexpTokenizer
@@ -8,13 +9,20 @@ from nltk.stem import WordNetLemmatizer
 from file_handler import FileHandler
 
 class Indexer:
-    def __init__(self):
+    def __init__(self, folder_name):
         # Download the nltk library before indexing.
         self.download_nltk_library()
         self.index_list = []
         self.doc_id_list = []
+        self.folder_name = folder_name
 
         self.file_handler = FileHandler()
+
+        self.populate_index_list()
+
+    def populate_index_list(self):
+        for i in range(0, 27):
+            self.index_list.append([])
 
     def set_up_ssl(self):
         """
@@ -71,10 +79,24 @@ class Indexer:
             importantText = set(self.tokenize(importantText))
 
             for word in set(normalText):
-                self.index_list.append('{}, {}, {}, {}\n'.format(word, doc_id, normalText.count(word), word in importantText))
+                print(word)
+
+                if word[0].isnumeric():
+                    print('\t\tNUMBER')
+                    self.index_list[26].append('{}, {}, {}, {}\n'.format(
+                        word, doc_id, normalText.count(word), word in importantText))
+                else:
+                    print('\t\tCHAR')
+                    index = ord(word[0]) - 97
+                    self.index_list[index].append('{}, {}, {}, {}\n'.format(
+                        word, doc_id, normalText.count(word), word in importantText))
+            
+            break   # break the loop just for one file
+
+        pprint(self.index_list)
 
 if __name__ == '__main__':
-    indexer = Indexer()
+    indexer = Indexer('DEV')
     print(indexer.index())
 
 
