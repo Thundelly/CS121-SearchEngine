@@ -2,9 +2,17 @@ import os
 import orjson as json
 from bs4 import BeautifulSoup
 
+try:
+    import orjson as json
+except ImportError:
+    try:
+        import ujson as json
+    except ImportError:
+        import json
+
 class FileHandler:
     def __init__(self):
-        pass                
+        pass               
 
     def walk_files(self, folder):
         """
@@ -38,10 +46,20 @@ class FileHandler:
             for s in soup.find_all(['b', 'strong', 'h1', 'h2', 'h3', 'title']):
                 weighted += s.getText().strip() + ' '
 
-        return (text, weighted)
+        return (file_info['url'], text, weighted)
+
+    def write_doc_id(self, doc_id_list):
+        """
+        Writes doc_id_list to doc_id.txt 
+        """
+        with open('doc_id.txt', 'w') as f:
+            f.write(''.join(doc_id_list))
 
     def write_to_file(self, index_list):
         pass
+
+
+            
 
 
 if __name__ == '__main__':

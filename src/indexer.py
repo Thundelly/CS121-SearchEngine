@@ -15,10 +15,9 @@ class Indexer:
         self.index_list = []
         self.doc_id_list = []
         self.folder_name = folder_name
-
         self.file_handler = FileHandler()
-
         self.populate_index_list()
+        self.doc_id = 0
 
     def populate_index_list(self):
         for i in range(0, 27):
@@ -69,28 +68,46 @@ class Indexer:
 
         return tokens
 
-    def index(self):
-        doc_id = 0
+    def add_doc_id(self, url): 
+        """
+        Appends a new url to the doc_id_list and increments the doc_id
+        If the list len is larger than ...., then call write_doc_id function
+        """
+        self.doc_id_list.append('{}, {}\n'.format(self.doc_id, url))
+        self.doc_id += 1
 
-        for file in self.file_handler.walk_files('DEV'):
-            normalText, importantText = self.file_handler.parse_file(file)
+        if len(self.doc_id_list) > 0:
+            self.file_handler.write_doc_id(self.doc_id_list)
+            self.doc_id_list.clear()
+
+    def index(self):
+        index_count = 0
+
+        for file in self.file_handler.walk_files(self.folder_name):
+            url_name, normalText, importantText = self.file_handler.parse_file(file)
             
+            self.add_doc_id(url_name)
             normalText = self.tokenize(normalText)
             importantText = set(self.tokenize(importantText))
 
             for word in set(normalText):
-                print(word)
+                # print(word)
 
                 if word[0].isnumeric():
-                    print('\t\tNUMBER')
+                    # print('\t\tNUMBER')
                     self.index_list[26].append('{}, {}, {}, {}\n'.format(
-                        word, doc_id, normalText.count(word), word in importantText))
+                        word, self.doc_id, normalText.count(word), word in importantText))
+                    index_count += 1
                 else:
-                    print('\t\tCHAR')
+                    # print('\t\tCHAR')
                     index = ord(word[0]) - 97
                     self.index_list[index].append('{}, {}, {}, {}\n'.format(
-                        word, doc_id, normalText.count(word), word in importantText))
-            
+                        word, self.doc_id, normalText.count(word), word in importantText))
+                    index_count += 1
+                
+                if index_count == 20:
+                    index_count = 0
+
             break   # break the loop just for one file
 
         pprint(self.index_list)
