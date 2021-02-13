@@ -55,7 +55,7 @@ class FileHandler:
         Writes doc_id_list to doc_id.txt 
         """
         with open('doc_id.txt', 'a') as f:
-            f.write(''.join(doc_id_list))
+            f.write(doc_id_list)
 
     def write_to_file(self, index_list):
         for index in index_list:

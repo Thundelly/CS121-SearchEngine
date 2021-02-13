@@ -77,7 +77,7 @@ class Indexer:
         self.doc_id += 1
 
         if len(self.doc_id_list) > 5000:
-            self.file_handler.write_doc_id(self.doc_id_list)
+            dump_doc_id(doc_id_list)
             self.doc_id_list.clear()
 
     def index(self, restart=False):
@@ -121,6 +121,10 @@ class Indexer:
             self.dump_indexes(index_list)
             index_list = []
             index_count = 0
+        
+        if len(self.doc_id_list) != 0:
+            dump_doc_id(doc_id_list)
+            self.doc_id_list.clear()
 
     def dump_indexes(self, index_list):
         temp_index_list = []
@@ -129,6 +133,10 @@ class Indexer:
             temp_index_list.append(''.join(sub_list))
 
         self.file_handler.write_to_file(temp_index_list)
+
+    def dump_doc_id(self, doc_id_list):
+        temp_doc_id = ''.join(doc_id_list)
+        self.file_handler.write_doc_id(temp_doc_id)
 
 if __name__ == '__main__':
     indexer = Indexer('DEV')
