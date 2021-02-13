@@ -79,7 +79,7 @@ class Indexer:
         if len(self.doc_id_list) > 5000:
             self.file_handler.write_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
-            
+
     def index(self, restart=False):
         index_list = []
         self.populate_index_list(index_list)
@@ -108,12 +108,14 @@ class Indexer:
                         word, self.doc_id, normalText.count(word), word in importantText))
                     index_count += 1
 
-                if index_count == 20:
+                if index_count == 5000:
                     self.dump_indexes(index_list)
 
                     index_list = []
                     self.populate_index_list(index_list)
                     index_count = 0
+
+            # break   # break the loop just for one file
 
         if index_count != 0:
             self.dump_indexes(index_list)
@@ -128,26 +130,7 @@ class Indexer:
 
         self.file_handler.write_to_file(temp_index_list)
 
-
 if __name__ == '__main__':
     indexer = Indexer('DEV')
     # indexer.index()
     indexer.index(restart=True)
-
-
-# parsing
-# posting
-# sorting
-# retreving
-# dictionary
-
-'''
-index
--> read json file
--> parsing
--> build index
--> write to a file
--> get files in every directory
-
-Total json files : 55393
-'''

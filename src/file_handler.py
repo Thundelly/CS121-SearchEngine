@@ -54,7 +54,7 @@ class FileHandler:
         """
         Writes doc_id_list to doc_id.txt 
         """
-        with open('doc_id.txt', 'w') as f:
+        with open('doc_id.txt', 'a') as f:
             f.write(''.join(doc_id_list))
 
     def write_to_file(self, index_list):
@@ -69,15 +69,15 @@ class FileHandler:
                         file.write(index)
 
     def clear_files(self):
-        print("CLEARING FILES")
+        print("CLEARING INDEX FILES")
         for file in self.walk_files('db'):
             with open(file, 'r+') as file:
                 file.truncate(0)
 
-
-            
-
+        print("CLEARING DOC ID FILE")
+        with open('doc_id.txt', 'r+') as file:
+            file.truncate(0)
 
 if __name__ == '__main__':
-
     file_handler = FileHandler()
+    file_handler.clear_files()
