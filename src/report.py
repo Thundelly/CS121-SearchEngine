@@ -13,7 +13,7 @@ class Report:
         self.file_handler = FileHandler()
 
     def make_report_m1(self):
-        with open('reportM1.pdf', 'w') as f:
+        with open('reportM1.txt', 'w') as f:
             f.write('{}\n\nNumber of indexed documents: {}\n'\
             'Number of unique words: {}\n'\
             'Size of index: {} kb'.format(
