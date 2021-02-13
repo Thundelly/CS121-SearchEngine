@@ -76,7 +76,7 @@ class Indexer:
         self.doc_id_list.append('{}, {}\n'.format(self.doc_id+1, url))
         self.doc_id += 1
 
-        if len(self.doc_id_list) > 0:
+        if len(self.doc_id_list) > 5000:
             self.file_handler.write_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
             
@@ -115,12 +115,10 @@ class Indexer:
                     self.populate_index_list(index_list)
                     index_count = 0
 
-            if index_count != 0:
-                self.dump_indexes(index_list)
-                index_list = []
-                index_count = 0
-
-            break   # break the loop just for one file
+        if index_count != 0:
+            self.dump_indexes(index_list)
+            index_list = []
+            index_count = 0
 
     def dump_indexes(self, index_list):
         temp_index_list = []
