@@ -68,52 +68,61 @@ class Indexer:
 
         return tokens
 
-    def index(self):
+    def index(self, restart=False):
         index_list = []
-        temp_index_list = []
         self.populate_index_list(index_list)
         doc_id = 0
         index_count = 0
 
-        for file in self.file_handler.walk_files('DEV'):
+        # reset the files
+        if restart:
+            self.file_handler.clear_files()
+
+        for file in self.file_handler.walk_files('DEV', '.json'):
             normalText, importantText = self.file_handler.parse_file(file)
 
             normalText = self.tokenize(normalText)
             importantText = set(self.tokenize(importantText))
 
             for word in set(normalText):
-                # print(word)
 
                 if word[0].isnumeric():
-                    # print('\t\tNUMBER')
-                    # index_list[26][0].join('{}, {}, {}, {}\n'.format(
-                    #     word, doc_id, normalText.count(word), word in importantText))
-
                     index_list[26].append('{}, {}, {}, {}\n'.format(
                         word, doc_id, normalText.count(word), word in importantText))
                     index_count += 1
                 else:
-                    # print('\t\tCHAR')
                     index = ord(word[0]) - 97
-                    # index_list[index][0].join('{}, {}, {}, {}\n'.format(
-                        # word, doc_id, normalText.count(word), word in importantText))
-
                     index_list[index].append('{}, {}, {}, {}\n'.format(
                         word, doc_id, normalText.count(word), word in importantText))
                     index_count += 1
 
-                # WORK ON THIS MORE LATER
                 if index_count == 20:
+                    self.dump_indexes(index_list)
+
+                    index_list = []
+                    self.populate_index_list(index_list)
                     index_count = 0
+
+            if index_count != 0:
+                self.dump_indexes(index_list)
+                index_list = []
+                index_count = 0
 
             break   # break the loop just for one file
 
-        pprint(index_list)
+    def dump_indexes(self, index_list):
+        temp_index_list = []
+
+        for sub_list in index_list:
+            temp_index_list.append(''.join(sub_list))
+
+        self.file_handler.write_to_file(temp_index_list)
 
 
 if __name__ == '__main__':
     indexer = Indexer('DEV')
-    print(indexer.index())
+    # indexer.index()
+    indexer.index(restart=True)
 
 
 # parsing
@@ -122,13 +131,13 @@ if __name__ == '__main__':
 # retreving
 # dictionary
 
-''' 
-index 
+'''
+index
 -> read json file
--> parsing 
+-> parsing
 -> build index
--> write to a file 
--> get files in every directory 
+-> write to a file
+-> get files in every directory
 
 Total json files : 55393
 '''
