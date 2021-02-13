@@ -83,7 +83,6 @@ class Indexer:
     def index(self, restart=False):
         index_list = []
         self.populate_index_list(index_list)
-        doc_id = 0
         index_count = 0
 
         # reset the files
@@ -102,12 +101,12 @@ class Indexer:
 
                 if word[0].isnumeric():
                     index_list[26].append('{}, {}, {}, {}\n'.format(
-                        word, doc_id, normalText.count(word), word in importantText))
+                        word, self.doc_id, normalText.count(word), word in importantText))
                     index_count += 1
                 else:
                     index = ord(word[0]) - 97
                     index_list[index].append('{}, {}, {}, {}\n'.format(
-                        word, doc_id, normalText.count(word), word in importantText))
+                        word, self.doc_id, normalText.count(word), word in importantText))
                     index_count += 1
 
                 if index_count == 20:

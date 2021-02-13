@@ -2,4 +2,3 @@
 nltk_data
 .DS_Store
 *.txt
-nltk_data/corpora/
