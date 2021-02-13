@@ -47,4 +47,3 @@ class FileHandler:
 if __name__ == '__main__':
 
     file_handler = FileHandler()
-    file_handler.write_to_file([])

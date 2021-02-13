@@ -1,3 +1,4 @@
+from re import I
 import ssl
 import os
 from pprint import pprint
@@ -8,21 +9,19 @@ from nltk.stem import WordNetLemmatizer
 
 from file_handler import FileHandler
 
+
 class Indexer:
     def __init__(self, folder_name):
         # Download the nltk library before indexing.
         self.download_nltk_library()
-        self.index_list = []
         self.doc_id_list = []
         self.folder_name = folder_name
 
         self.file_handler = FileHandler()
 
-        self.populate_index_list()
-
-    def populate_index_list(self):
+    def populate_index_list(self, index_list):
         for i in range(0, 27):
-            self.index_list.append([])
+            index_list.append([])
 
     def set_up_ssl(self):
         """
@@ -70,30 +69,47 @@ class Indexer:
         return tokens
 
     def index(self):
+        index_list = []
+        temp_index_list = []
+        self.populate_index_list(index_list)
         doc_id = 0
+        index_count = 0
 
         for file in self.file_handler.walk_files('DEV'):
             normalText, importantText = self.file_handler.parse_file(file)
-            
+
             normalText = self.tokenize(normalText)
             importantText = set(self.tokenize(importantText))
 
             for word in set(normalText):
-                print(word)
+                # print(word)
 
                 if word[0].isnumeric():
-                    print('\t\tNUMBER')
-                    self.index_list[26].append('{}, {}, {}, {}\n'.format(
+                    # print('\t\tNUMBER')
+                    # index_list[26][0].join('{}, {}, {}, {}\n'.format(
+                    #     word, doc_id, normalText.count(word), word in importantText))
+
+                    index_list[26].append('{}, {}, {}, {}\n'.format(
                         word, doc_id, normalText.count(word), word in importantText))
+                    index_count += 1
                 else:
-                    print('\t\tCHAR')
+                    # print('\t\tCHAR')
                     index = ord(word[0]) - 97
-                    self.index_list[index].append('{}, {}, {}, {}\n'.format(
+                    # index_list[index][0].join('{}, {}, {}, {}\n'.format(
+                        # word, doc_id, normalText.count(word), word in importantText))
+
+                    index_list[index].append('{}, {}, {}, {}\n'.format(
                         word, doc_id, normalText.count(word), word in importantText))
-            
+                    index_count += 1
+
+                # WORK ON THIS MORE LATER
+                if index_count == 20:
+                    index_count = 0
+
             break   # break the loop just for one file
 
-        pprint(self.index_list)
+        pprint(index_list)
+
 
 if __name__ == '__main__':
     indexer = Indexer('DEV')
