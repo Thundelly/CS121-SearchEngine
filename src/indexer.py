@@ -77,7 +77,7 @@ class Indexer:
         self.doc_id += 1
 
         if len(self.doc_id_list) > 5000:
-            dump_doc_id(doc_id_list)
+            self.dump_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
 
     def index(self, restart=False):
@@ -123,7 +123,7 @@ class Indexer:
             index_count = 0
         
         if len(self.doc_id_list) != 0:
-            dump_doc_id(doc_id_list)
+            self.dump_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
 
     def dump_indexes(self, index_list):
