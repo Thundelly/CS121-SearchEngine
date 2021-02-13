@@ -115,12 +115,12 @@ class Indexer:
                     self.populate_index_list(index_list)
                     index_count = 0
 
-            if index_count != 0:
-                self.dump_indexes(index_list)
-                index_list = []
-                index_count = 0
-
             break   # break the loop just for one file
+
+        if index_count != 0:
+            self.dump_indexes(index_list)
+            index_list = []
+            index_count = 0
 
     def dump_indexes(self, index_list):
         temp_index_list = []
