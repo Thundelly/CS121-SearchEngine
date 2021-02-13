@@ -9,7 +9,6 @@ except ImportError:
     except ImportError:
         import json
 
-
 class FileHandler:
     def __init__(self):
         pass
@@ -56,7 +55,7 @@ class FileHandler:
         Writes doc_id_list to doc_id.txt 
         """
         with open('doc_id.txt', 'a') as f:
-            f.write(''.join(doc_id_list))
+            f.write(doc_id_list)
 
     def write_to_file(self, index_list):
         for index in index_list:
@@ -78,7 +77,6 @@ class FileHandler:
         print("CLEARING DOC ID FILE")
         with open('doc_id.txt', 'r+') as file:
             file.truncate(0)
-
 
 if __name__ == '__main__':
     file_handler = FileHandler()
