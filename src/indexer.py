@@ -17,8 +17,7 @@ class Indexer:
         self.doc_id_list = []
         self.folder_name = folder_name
         self.file_handler = FileHandler()
-        self.populate_index_list()
-        self.doc_id = 0
+        self.doc_id = -1
 
     def populate_index_list(self, index_list):
         for i in range(0, 27):
@@ -69,7 +68,7 @@ class Indexer:
 
         return tokens
 
-    def add_doc_id(self, url): 
+    def add_doc_id(self, url):
         """
         Appends a new url to the doc_id_list and increments the doc_id
         If the list len is larger than ...., then call write_doc_id function
@@ -90,9 +89,10 @@ class Indexer:
         if restart:
             self.file_handler.clear_files()
 
-        for file in self.file_handler.walk_files('DEV', '.json'):
-            url_name, normalText, importantText = self.file_handler.parse_file(file)
-            
+        for file in self.file_handler.walk_files(self.folder_name, '.json'):
+            url_name, normalText, importantText = self.file_handler.parse_file(
+                file)
+
             self.add_doc_id(url_name)
             normalText = self.tokenize(normalText)
             importantText = set(self.tokenize(importantText))
@@ -100,12 +100,12 @@ class Indexer:
             for word in set(normalText):
                 if word[0].isnumeric():
                     index_list[26].append('{}, {}, {}, {}\n'.format(
-                        word, doc_id, normalText.count(word), word in importantText))
+                        word, self.doc_id, normalText.count(word), word in importantText))
                     index_count += 1
                 else:
                     index = ord(word[0]) - 97
                     index_list[index].append('{}, {}, {}, {}\n'.format(
-                        word, doc_id, normalText.count(word), word in importantText))
+                        word, self.doc_id, normalText.count(word), word in importantText))
                     index_count += 1
 
                 if index_count == 20:

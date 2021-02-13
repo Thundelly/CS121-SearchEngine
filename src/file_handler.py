@@ -1,7 +1,13 @@
 import os
-import orjson as json
 from bs4 import BeautifulSoup
 
+try:
+    import orjson as json
+except ImportError:
+    try:
+        import ujson as json
+    except ImportError:
+        import json
 
 class FileHandler:
     def __init__(self):
