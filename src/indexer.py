@@ -17,7 +17,7 @@ class Indexer:
         self.doc_id_list = []
         self.folder_name = folder_name
         self.file_handler = FileHandler()
-        self.doc_id = 0
+        self.doc_id = -1
 
     def populate_index_list(self, index_list):
         for i in range(0, 27):
@@ -73,13 +73,13 @@ class Indexer:
         Appends a new url to the doc_id_list and increments the doc_id
         If the list len is larger than ...., then call write_doc_id function
         """
-        self.doc_id_list.append('{}, {}\n'.format(self.doc_id, url))
+        self.doc_id_list.append('{}, {}\n'.format(self.doc_id+1, url))
         self.doc_id += 1
 
         if len(self.doc_id_list) > 0:
             self.file_handler.write_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
-
+            
     def index(self, restart=False):
         index_list = []
         self.populate_index_list(index_list)
@@ -98,7 +98,6 @@ class Indexer:
             importantText = set(self.tokenize(importantText))
 
             for word in set(normalText):
-
                 if word[0].isnumeric():
                     index_list[26].append('{}, {}, {}, {}\n'.format(
                         word, self.doc_id, normalText.count(word), word in importantText))
