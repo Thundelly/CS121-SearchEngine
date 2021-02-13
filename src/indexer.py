@@ -111,7 +111,7 @@ class Indexer:
                 if index_count == 5000:
                     self.dump_indexes(index_list)
 
-                    index_list = []
+                    index_list.clear()
                     self.populate_index_list(index_list)
                     index_count = 0
 
@@ -119,7 +119,7 @@ class Indexer:
 
         if index_count != 0:
             self.dump_indexes(index_list)
-            index_list = []
+            index_list.clear()
             index_count = 0
 
     def dump_indexes(self, index_list):
