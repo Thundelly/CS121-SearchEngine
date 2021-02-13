@@ -73,7 +73,7 @@ class Indexer:
         Appends a new url to the doc_id_list and increments the doc_id
         If the list len is larger than ...., then call write_doc_id function
         """
-        self.doc_id_list.append('{}, {}\n'.format(self.doc_id, url))
+        self.doc_id_list.append('{}, {}\n'.format(self.doc_id+1, url))
         self.doc_id += 1
 
         if len(self.doc_id_list) > 0:
