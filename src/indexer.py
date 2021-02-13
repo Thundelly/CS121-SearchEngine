@@ -11,13 +11,15 @@ from file_handler import FileHandler
 
 
 class Indexer:
-    def __init__(self, folder_name):
+    def __init__(self, folder_name, file_count_offset):
         # Download the nltk library before indexing.
         self.download_nltk_library()
         self.doc_id_list = []
         self.folder_name = folder_name
         self.file_handler = FileHandler()
         self.doc_id = -1
+
+        self.file_count_offset = file_count_offset
 
     def populate_index_list(self, index_list):
         for i in range(0, 27):
@@ -63,8 +65,9 @@ class Indexer:
         # Includes root words of verbes, and plural forms.
         lemmatizer = WordNetLemmatizer()
         tokens = [lemmatizer.lemmatize(w, pos="v") for w in re_tokens]
-        # Check for tokens that are single characters and exclude them
-        tokens = [token for token in tokens if len(token) != 1]
+
+        # # Check for tokens that are single characters and exclude them
+        # tokens = [token for token in tokens if len(token) != 1]
 
         return tokens
 
@@ -76,7 +79,7 @@ class Indexer:
         self.doc_id_list.append('{}, {}\n'.format(self.doc_id+1, url))
         self.doc_id += 1
 
-        if len(self.doc_id_list) > 1:
+        if len(self.doc_id_list) > self.file_count_offset:
             self.dump_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
 
@@ -98,30 +101,35 @@ class Indexer:
             importantText = set(self.tokenize(importantText))
 
             for word in set(normalText):
-                if word[0].isnumeric():
-                    index_list[26].append('{}, {}, {}, {}\n'.format(
-                        word, self.doc_id, normalText.count(word), word in importantText))
-                    index_count += 1
-                else:
-                    index = ord(word[0]) - 97
-                    index_list[index].append('{}, {}, {}, {}\n'.format(
-                        word, self.doc_id, normalText.count(word), word in importantText))
-                    index_count += 1
+                # check if the word is single character or not
+                if len(word) != 1:
+                    if word[0].isnumeric():
+                        index_list[26].append('{}, {}, {}, {}\n'.format(
+                            word, self.doc_id, normalText.count(word), word in importantText))
+                        index_count += 1
+                    else:
+                        index = ord(word[0]) - 97
+                        index_list[index].append('{}, {}, {}, {}\n'.format(
+                            word, self.doc_id, normalText.count(word), word in importantText))
+                        index_count += 1
 
-                if index_count == 5000:
-                    self.dump_indexes(index_list)
+                    if index_count == self.file_count_offset:
+                        self.dump_indexes(index_list)
 
-                    index_list = []
-                    self.populate_index_list(index_list)
-                    index_count = 0
+                        index_list.clear()
+                        self.populate_index_list(index_list)
+                        index_count = 0
+                
+            normalText.clear()
+            importantText.clear()
 
-            # break   # break the loop just for one file
+                # break   # break the loop just for one file
 
         if index_count != 0:
             self.dump_indexes(index_list)
-            index_list = []
+            index_list.clear()
             index_count = 0
-        
+
         if len(self.doc_id_list) != 0:
             self.dump_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
@@ -133,10 +141,12 @@ class Indexer:
             temp_index_list.append(''.join(sub_list))
 
         self.file_handler.write_to_file(temp_index_list)
+        temp_index_list.clear()
 
     def dump_doc_id(self, doc_id_list):
         temp_doc_id = ''.join(doc_id_list)
         self.file_handler.write_doc_id(temp_doc_id)
+
 
 if __name__ == '__main__':
     indexer = Indexer('DEV')

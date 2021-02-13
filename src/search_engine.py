@@ -6,11 +6,11 @@ import time
 
 class SearchEngine:
     def __init__(self):
-        self.indexer = Indexer('./DEV')
-        pass
+        self.indexer = Indexer('./DEV', file_count_offset=10000)
 
     def run(self):
         start_time = datetime.now()
+        print("Start Time:", start_time)
 
         self.indexer.index(restart=True)
 
