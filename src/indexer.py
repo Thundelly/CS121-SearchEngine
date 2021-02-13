@@ -79,7 +79,7 @@ class Indexer:
         if len(self.doc_id_list) > 0:
             self.file_handler.write_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
-            
+
     def index(self, restart=False):
         index_list = []
         self.populate_index_list(index_list)
@@ -108,14 +108,14 @@ class Indexer:
                         word, self.doc_id, normalText.count(word), word in importantText))
                     index_count += 1
 
-                if index_count == 20:
+                if index_count == 5000:
                     self.dump_indexes(index_list)
 
                     index_list = []
                     self.populate_index_list(index_list)
                     index_count = 0
 
-            break   # break the loop just for one file
+            # break   # break the loop just for one file
 
         if index_count != 0:
             self.dump_indexes(index_list)
