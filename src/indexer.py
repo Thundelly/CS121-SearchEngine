@@ -11,13 +11,15 @@ from file_handler import FileHandler
 
 
 class Indexer:
-    def __init__(self, folder_name):
+    def __init__(self, folder_name, file_count_offset):
         # Download the nltk library before indexing.
         self.download_nltk_library()
         self.doc_id_list = []
         self.folder_name = folder_name
         self.file_handler = FileHandler()
         self.doc_id = -1
+
+        self.file_count_offset = file_count_offset
 
     def populate_index_list(self, index_list):
         for i in range(0, 27):
@@ -76,7 +78,7 @@ class Indexer:
         self.doc_id_list.append('{}, {}\n'.format(self.doc_id+1, url))
         self.doc_id += 1
 
-        if len(self.doc_id_list) > 5000:
+        if len(self.doc_id_list) > self.file_count_offset:
             self.dump_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
 
@@ -108,7 +110,7 @@ class Indexer:
                         word, self.doc_id, normalText.count(word), word in importantText))
                     index_count += 1
 
-                if index_count == 5000:
+                if index_count == self.file_count_offset:
                     self.dump_indexes(index_list)
 
                     index_list.clear()
@@ -121,7 +123,7 @@ class Indexer:
             self.dump_indexes(index_list)
             index_list.clear()
             index_count = 0
-        
+
         if len(self.doc_id_list) != 0:
             self.dump_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
@@ -133,10 +135,12 @@ class Indexer:
             temp_index_list.append(''.join(sub_list))
 
         self.file_handler.write_to_file(temp_index_list)
+        temp_index_list.clear()
 
     def dump_doc_id(self, doc_id_list):
         temp_doc_id = ''.join(doc_id_list)
         self.file_handler.write_doc_id(temp_doc_id)
+
 
 if __name__ == '__main__':
     indexer = Indexer('DEV')
