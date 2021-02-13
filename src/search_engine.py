@@ -10,6 +10,7 @@ class SearchEngine:
 
     def run(self):
         start_time = datetime.now()
+        print("Start Time:", start_time)
 
         self.indexer.index(restart=True)
 

@@ -65,8 +65,9 @@ class Indexer:
         # Includes root words of verbes, and plural forms.
         lemmatizer = WordNetLemmatizer()
         tokens = [lemmatizer.lemmatize(w, pos="v") for w in re_tokens]
-        # Check for tokens that are single characters and exclude them
-        tokens = [token for token in tokens if len(token) != 1]
+
+        # # Check for tokens that are single characters and exclude them
+        # tokens = [token for token in tokens if len(token) != 1]
 
         return tokens
 
@@ -100,24 +101,29 @@ class Indexer:
             importantText = set(self.tokenize(importantText))
 
             for word in set(normalText):
-                if word[0].isnumeric():
-                    index_list[26].append('{}, {}, {}, {}\n'.format(
-                        word, self.doc_id, normalText.count(word), word in importantText))
-                    index_count += 1
-                else:
-                    index = ord(word[0]) - 97
-                    index_list[index].append('{}, {}, {}, {}\n'.format(
-                        word, self.doc_id, normalText.count(word), word in importantText))
-                    index_count += 1
+                # check if the word is single character or not
+                if len(word) != 1:
+                    if word[0].isnumeric():
+                        index_list[26].append('{}, {}, {}, {}\n'.format(
+                            word, self.doc_id, normalText.count(word), word in importantText))
+                        index_count += 1
+                    else:
+                        index = ord(word[0]) - 97
+                        index_list[index].append('{}, {}, {}, {}\n'.format(
+                            word, self.doc_id, normalText.count(word), word in importantText))
+                        index_count += 1
 
-                if index_count == self.file_count_offset:
-                    self.dump_indexes(index_list)
+                    if index_count == self.file_count_offset:
+                        self.dump_indexes(index_list)
 
-                    index_list.clear()
-                    self.populate_index_list(index_list)
-                    index_count = 0
+                        index_list.clear()
+                        self.populate_index_list(index_list)
+                        index_count = 0
+                
+            normalText.clear()
+            importantText.clear()
 
-            # break   # break the loop just for one file
+                # break   # break the loop just for one file
 
         if index_count != 0:
             self.dump_indexes(index_list)
