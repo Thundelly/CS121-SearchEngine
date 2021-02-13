@@ -1,3 +1,4 @@
+from re import I
 import ssl
 import os
 from pprint import pprint
@@ -8,20 +9,20 @@ from nltk.stem import WordNetLemmatizer
 
 from file_handler import FileHandler
 
+
 class Indexer:
     def __init__(self, folder_name):
         # Download the nltk library before indexing.
         self.download_nltk_library()
-        self.index_list = []
         self.doc_id_list = []
         self.folder_name = folder_name
         self.file_handler = FileHandler()
         self.populate_index_list()
         self.doc_id = 0
 
-    def populate_index_list(self):
+    def populate_index_list(self, index_list):
         for i in range(0, 27):
-            self.index_list.append([])
+            index_list.append([])
 
     def set_up_ssl(self):
         """
@@ -79,11 +80,17 @@ class Indexer:
         if len(self.doc_id_list) > 0:
             self.file_handler.write_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
-
-    def index(self):
+            
+    def index(self, restart=False):
+        index_list = []
+        self.populate_index_list(index_list)
         index_count = 0
 
-        for file in self.file_handler.walk_files(self.folder_name):
+        # reset the files
+        if restart:
+            self.file_handler.clear_files()
+
+        for file in self.file_handler.walk_files('DEV', '.json'):
             url_name, normalText, importantText = self.file_handler.parse_file(file)
             
             self.add_doc_id(url_name)
@@ -91,30 +98,43 @@ class Indexer:
             importantText = set(self.tokenize(importantText))
 
             for word in set(normalText):
-                # print(word)
-
                 if word[0].isnumeric():
-                    # print('\t\tNUMBER')
-                    self.index_list[26].append('{}, {}, {}, {}\n'.format(
-                        word, self.doc_id, normalText.count(word), word in importantText))
+                    index_list[26].append('{}, {}, {}, {}\n'.format(
+                        word, doc_id, normalText.count(word), word in importantText))
                     index_count += 1
                 else:
-                    # print('\t\tCHAR')
                     index = ord(word[0]) - 97
-                    self.index_list[index].append('{}, {}, {}, {}\n'.format(
-                        word, self.doc_id, normalText.count(word), word in importantText))
+                    index_list[index].append('{}, {}, {}, {}\n'.format(
+                        word, doc_id, normalText.count(word), word in importantText))
                     index_count += 1
-                
+
                 if index_count == 20:
+                    self.dump_indexes(index_list)
+
+                    index_list = []
+                    self.populate_index_list(index_list)
                     index_count = 0
+
+            if index_count != 0:
+                self.dump_indexes(index_list)
+                index_list = []
+                index_count = 0
 
             break   # break the loop just for one file
 
-        pprint(self.index_list)
+    def dump_indexes(self, index_list):
+        temp_index_list = []
+
+        for sub_list in index_list:
+            temp_index_list.append(''.join(sub_list))
+
+        self.file_handler.write_to_file(temp_index_list)
+
 
 if __name__ == '__main__':
     indexer = Indexer('DEV')
-    print(indexer.index())
+    # indexer.index()
+    indexer.index(restart=True)
 
 
 # parsing
@@ -123,13 +143,13 @@ if __name__ == '__main__':
 # retreving
 # dictionary
 
-''' 
-index 
+'''
+index
 -> read json file
--> parsing 
+-> parsing
 -> build index
--> write to a file 
--> get files in every directory 
+-> write to a file
+-> get files in every directory
 
 Total json files : 55393
 '''
