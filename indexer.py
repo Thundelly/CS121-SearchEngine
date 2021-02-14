@@ -12,7 +12,6 @@ import ssl
 ALPHANUMERIC = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
 
-
 def download_nltk_library():
     """
     Download NLTK libraray.
@@ -47,16 +46,14 @@ def parse_file(filename):
         content = file_info['content']
         soup = BeautifulSoup(content, 'html.parser')
 
-        text = ''
-        weighted = ''
-
+        weighted = []
         text = soup.text
 
         for tag in ['b', 'strong', 'h1', 'h2', 'h3', 'title']:
             for s in soup.find_all(tag):
-                weighted += s.getText().strip() + ' '
+                weighted.append(s.getText().strip() + ' ')
 
-        return (tokenize(text), tokenize(weighted))
+        return file_info['url'], tokenize(text), tokenize(''.join(weighted))
 
 
 def tokenize(text):
@@ -75,20 +72,69 @@ def tokenize(text):
     return tokens
 
 
-def main():
-    download_nltk_library()
-    print(parse_file('DEV/archive_ics_uci_edu/00db3b44bb015e65e2675829c71f4269b5d9fbaf282e89fb931f492b35dca268.json'))
+def compute_word_frequencies(token_list: [str]) -> {str: int}:
+    frequencies = dict()
+    # Looping through each token in tokenList: O(n)
+    for token in token_list:
+        # Adding/setting key and values in a dict: O(1)
+        if token in frequencies:
+            frequencies[token] += 1
+        else:
+            frequencies[token] = 1
+    return frequencies
 
-    count = 0
-    download_nltk_library()
 
-    folder = 'DEV'
+def loop_corpus(folder):
+    count = 1
+    partial_index_id = 0
+    index = dict()
+    file_numbers = dict()
+
     for root, dirs, files in os.walk(folder):
         for filename in files:
             if filename.endswith('.json'):
-                parse_file(os.path.join(root, filename))
-    print(count)
+                data = parse_file(os.path.join(root, filename))
+                # adds {number (document id): url} to file_numbers
+                file_numbers[count] = data[0]
+                frequencies = compute_word_frequencies(data[1])
+                for word, frequency in frequencies.items():
+                    if word not in index:
+                        index[word] = dict()
+                    # the key is the document id and its element is the tuple
+                    # first value of the tuple is the frequency of the word
+                    # if the word is in the important list, set the second
+                    # value of the tuple to 1, else 0
+                    if word in data[2]:
+                        index[word][count] = (frequency, 1)
+                    else:
+                        index[word][count] = (frequency, 0)
+                count += 1
 
+            if count % 100 == 0:
+                print(f'Looped through {count} pages!')
+            # offloading every 10k pages
+            if count % 10000 == 0:
+                print(f'Looped through {count} pages. Offloading to pi{partial_index_id}.')
+                with open(f'pi{partial_index_id}.txt', 'w') as f:
+                    for line in sorted(index.items()):
+                        f.write(str(line) + '\n')
+                index.clear()
+                partial_index_id += 1
+                print('Done with offloading, continuing.')
+
+    # final offload
+    print(f'Looped through every page. Offloading to pi{partial_index_id}.')
+    with open(f'pi{partial_index_id}.txt', 'w') as f:
+        for line in sorted(index.items()):
+            f.write(str(line) + '\n')
+    index.clear()
+
+
+
+def main():
+    download_nltk_library()
+
+    loop_corpus('DEV')
 
 
 if __name__ == "__main__":
