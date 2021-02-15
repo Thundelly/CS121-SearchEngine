@@ -8,9 +8,6 @@ from nltk.corpus.reader import wordlist
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem import WordNetLemmatizer, PorterStemmer, SnowballStemmer
 
-# change the code inside index too
-doc_count = 100
-
 
 class Indexer:
     def __init__(self, folder_name, file_handler, file_count_offset):
