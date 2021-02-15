@@ -1,25 +1,25 @@
 import ssl
 import os
+import re
 from pprint import pprint
 
 import nltk
 from nltk.corpus.reader import wordlist
 from nltk.tokenize import RegexpTokenizer
-from nltk.stem import WordNetLemmatizer
-
-from file_handler import FileHandler
+from nltk.stem import WordNetLemmatizer, PorterStemmer, SnowballStemmer
 
 # change the code inside index too
 doc_count = 100
 
-class Indexer:
+
+class IndexerDebug:
     def __init__(self, folder_name, file_handler, file_count_offset):
         # Download the nltk library before indexing.
         self.download_nltk_library()
         self.doc_id_list = []
+        self.doc_id = 1
         self.folder_name = folder_name
         self.file_handler = file_handler
-        self.doc_id = -1
 
         self.file_count_offset = file_count_offset
 
@@ -63,15 +63,9 @@ class Indexer:
         re_tokenizer = RegexpTokenizer('[a-zA-Z0-9]+')
         re_tokens = re_tokenizer.tokenize(text.lower())
 
-        # Lemmatizer. Checks for word roots words.
-        # Includes root words of verbes, and plural forms.
-        # And check for single character tokens
-        lemmatizer = WordNetLemmatizer()
-        tokens = [lemmatizer.lemmatize(token, pos="v")
-                  for token in re_tokens if len(re_tokens) != 1]
-
-        # # Check for tokens that are single characters and exclude them
-        # tokens = [token for token in tokens if len(token) != 1]
+        stemmer = PorterStemmer()
+        tokens = [stemmer.stem(token)
+                  for token in re_tokens if len(token) != 1]
 
         return tokens
 
@@ -80,75 +74,73 @@ class Indexer:
         Appends a new url to the doc_id_list and increments the doc_id
         If the list len is larger than ...., then call write_doc_id function
         """
-        self.doc_id_list.append('{}, {}\n'.format(self.doc_id+1, url))
+        self.doc_id_list.append(f'{self.doc_id}, {url}\n')
         self.doc_id += 1
 
         if len(self.doc_id_list) > self.file_count_offset:
             self.dump_doc_id(self.doc_id_list)
             self.doc_id_list.clear()
 
-    def index(self, restart=False):
-        index_list = []
-        self.populate_index_list(index_list)
-        index_count = 0
+    def compute_word_frequencies(self, token_list):
+        frequencies = dict()
+        # Looping through each token in tokenList: O(n)
+        for token in token_list:
+            # Adding/setting key and values in a dict: O(1)
+            if token in frequencies:
+                frequencies[token] += 1
+            else:
+                frequencies[token] = 1
 
+        return frequencies
+
+    def index(self, restart=False):
         # reset the files
         if restart:
             self.file_handler.clear_files()
 
-        count = 0
+        index_id = 0
+        index_dict = dict()
 
         for file in self.file_handler.walk_files(self.folder_name, '.json'):
-            url_name, normalText, importantText = self.file_handler.parse_file(
-                file)
+            url, normalText, importantText = self.file_handler.parse_file(file)
 
-            self.add_doc_id(url_name)
+            # Keep record of doc id and url
+            self.add_doc_id(url)
             normalText = self.tokenize(normalText)
-            importantText = set(self.tokenize(importantText))
+            importantText = self.tokenize(importantText)
 
-            for word in set(normalText):
-                if word[0].isnumeric():
-                    index_list[26].append('{}, {}, {}, {}\n'.format(
-                        word, self.doc_id, normalText.count(word), word in importantText))
-                    index_count += 1
+            # Find frequencies of each word
+            frequencies = self.compute_word_frequencies(normalText)
+
+            for word, frequency in frequencies.items():
+                if word not in index_dict:
+                    index_dict[word] = dict()
+
+                if word in importantText:
+                    index_dict[word][self.doc_id] = (frequency, 1)
                 else:
-                    index = ord(word[0]) - 97
-                    index_list[index].append('{}, {}, {}, {}\n'.format(
-                        word, self.doc_id, normalText.count(word), word in importantText))
-                    index_count += 1
+                    index_dict[word][self.doc_id] = (frequency, 0)
 
-                if index_count == self.file_count_offset:
-                    self.dump_indexes(index_list)
+            if self.doc_id % 100 == 0:
+                print(f'Looped through {self.doc_id} pages!')
 
-                    index_list.clear()
-                    self.populate_index_list(index_list)
-                    index_count = 0
-            
-            count += 1
+            # Offload every 10,000 pages
+            if self.doc_id % self.file_count_offset == 0:
+                print(
+                    f'Looped through {self.doc_id} pages. Offloading to pi{index_id}')
+                self.file_handler.write_to_file(index_id, index_dict)
+                index_dict.clear()
+                index_id += 1
+                print('Done with offloading, continuing.')
 
-            if count == doc_count:
-                break   # break the loop just for one file
+        # Final offload
+        print(f'Looped through every page. Offloading to pi{index_id}')
+        self.file_handler.write_to_file(index_id, index_dict)
+        index_dict.clear()
 
-            normalText.clear()
-            importantText.clear()
-
-        if index_count != 0:
-            self.dump_indexes(index_list)
-            index_list.clear()
-            index_count = 0
-
-        if len(self.doc_id_list) != 0:
-            self.dump_doc_id(self.doc_id_list)
-            self.doc_id_list.clear()
-
-    def dump_indexes(self, index_list):
-        temp_index_list = []
-
-        for sub_list in index_list:
-            temp_index_list.append(''.join(sub_list))
-
-        self.file_handler.write_to_file(temp_index_list)
-        temp_index_list.clear()
+        # dumping doc id list
+        self.dump_doc_id(self.doc_id_list)
+        self.doc_id_list.clear()
 
     def dump_doc_id(self, doc_id_list):
         temp_doc_id = ''.join(doc_id_list)
@@ -156,6 +148,6 @@ class Indexer:
 
 
 if __name__ == '__main__':
-    indexer = Indexer('DEV')
+    indexer = IndexerDebug('DEV')
     # indexer.index()
     indexer.index(restart=True)
