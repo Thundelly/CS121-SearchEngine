@@ -1,12 +1,12 @@
 import ssl
 import os
-import re
 from pprint import pprint
+from datetime import datetime
 
 import nltk
 from nltk.corpus.reader import wordlist
 from nltk.tokenize import RegexpTokenizer
-from nltk.stem import WordNetLemmatizer, PorterStemmer, SnowballStemmer
+from nltk.stem import SnowballStemmer
 
 
 class Indexer:
@@ -60,7 +60,7 @@ class Indexer:
         re_tokenizer = RegexpTokenizer('[a-zA-Z0-9]+')
         re_tokens = re_tokenizer.tokenize(text.lower())
 
-        stemmer = PorterStemmer()
+        stemmer = SnowballStemmer(language='english')
         tokens = [stemmer.stem(token)
                   for token in re_tokens if len(token) != 1]
 
@@ -95,16 +95,18 @@ class Indexer:
         if restart:
             self.file_handler.clear_files()
 
+        # Update current status
+        last_ran_timestamp = datetime.now()
+        self.file_handler.set_index_status(False, last_ran_timestamp)
+
         index_id = 0
         index_dict = dict()
 
         for file in self.file_handler.walk_files(self.folder_name, '.json'):
             url, normalText, importantText = self.file_handler.parse_file(file)
 
-            # Keep record of doc id and url
-            self.add_doc_id(url)
             normalText = self.tokenize(normalText)
-            importantText = self.tokenize(importantText)
+            importantText = set(self.tokenize(importantText))
 
             # Find frequencies of each word
             frequencies = self.compute_word_frequencies(normalText)
@@ -117,6 +119,9 @@ class Indexer:
                     index_dict[word][self.doc_id] = (frequency, 1)
                 else:
                     index_dict[word][self.doc_id] = (frequency, 0)
+
+            # Keep record of doc id and url
+            self.add_doc_id(url)
 
             if self.doc_id % 100 == 0:
                 print(f'Looped through {self.doc_id} pages!')
@@ -134,6 +139,9 @@ class Indexer:
         print(f'Looped through every page. Offloading to pi{index_id}')
         self.file_handler.write_to_file(index_id, index_dict)
         index_dict.clear()
+
+        # Set index status to True
+        self.file_handler.set_index_status(True, last_ran_timestamp)
 
         # dumping doc id list
         self.dump_doc_id(self.doc_id_list)

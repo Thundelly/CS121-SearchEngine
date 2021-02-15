@@ -55,7 +55,7 @@ class FileHandler:
         """
         Writes doc_id_list to doc_id.txt 
         """
-        with open('doc_id.txt', 'a') as f:
+        with open('./db/doc_id.txt', 'a') as f:
             f.write(doc_id_list)
 
     def write_to_file(self, index_id, index_dict):
@@ -70,9 +70,23 @@ class FileHandler:
                 file.truncate(0)
 
         # print("CLEARING DOC ID FILE")
-        with open('doc_id.txt', 'r+') as file:
+        with open('./db/doc_id.txt', 'r+') as file:
             file.truncate(0)
 
+    def set_index_status(self, completed, timestamp):
+        status = {
+            "Last Completed": completed,
+            "Last Run": timestamp
+        }
+        with open('index_status.log', 'wb') as file:
+            json_data = json.dumps(status)
+            file.write(json_data)
+
+    def get_index_status(self):
+        with open('index_status.log', 'r') as file:
+            status = json.loads(file.read())
+
+        return status["Last Completed"]
 
 if __name__ == '__main__':
     file_handler = FileHandler()
