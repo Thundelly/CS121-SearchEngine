@@ -3,7 +3,7 @@ import json
 
 import nltk
 from nltk.tokenize import RegexpTokenizer
-from nltk.stem import WordNetLemmatizer
+from nltk.stem import WordNetLemmatizer, PorterStemmer, SnowballStemmer
 
 import os
 import ssl
@@ -64,10 +64,8 @@ def tokenize(text):
     re_tokenizer = RegexpTokenizer('[a-zA-Z0-9]+')
     re_tokens = re_tokenizer.tokenize(text.lower())
 
-    # Lemmatizer. Checks for word roots words.
-    # Includes root words of verbes, and plural forms.
-    lemmatizer = WordNetLemmatizer()
-    tokens = [lemmatizer.lemmatize(w) for w in re_tokens]
+    stemmer = PorterStemmer()
+    tokens = [stemmer.stem(token) for token in re_tokens if len(token) != 1]
 
     return tokens
 
@@ -130,11 +128,87 @@ def loop_corpus(folder):
     index.clear()
 
 
+def merge_indexes(file1, file2, outputfile):
+    index1 = open(file1, 'r')
+    index2 = open(file2, 'r')
+    output = open(outputfile, 'w')
+
+    line1 = index1.readline().strip('\n')
+    line2 = index2.readline().strip('\n')
+
+    while True:
+        # If end of file 1 is reached, read the rest from file 2 and then break
+        if line1 == '':
+            while True:
+                if line2 == '':
+                    break
+                output.write(line2 + '\n')
+                line2 = index2.readline().strip('\n')
+            break
+
+        # If end of file 2 is reached, read the rest from file 1 and then break
+        if line2 == '':
+            while True:
+                if line1 == '':
+                    break
+                output.write(line1 + '\n')
+                line1 = index1.readline().strip('\n')
+            break
+
+        # get the two tuples from the two lines
+        tup1 = eval(line1)
+        tup2 = eval(line2)
+
+        # keep writing the first index's contents while the first line's token
+        # is smaller than the second line's
+        while tup1[0] < tup2[0]:
+            output.write(line1 + '\n')
+            line1 = index1.readline().strip('\n')
+            if line1 == '':
+                break
+            tup1 = eval(line1)
+
+        # keep writing the second index's contents while the second line's
+        # token is smaller than the first line's
+        while tup1[0] > tup2[0]:
+            output.write(line2 + '\n')
+            line2 = index2.readline().strip('\n')
+            if line2 == '':
+                break
+            tup2 = eval(line2)
+
+        # at the end of these two loops, the first token should either be
+        # smaller than or equal to the second token (or either of the two have
+        # ended)
+
+        # if the tokens are equal, merge the contents
+        if tup1[0] == tup2[0]:
+            new_contents = {**tup1[1], **tup2[1]}
+            output.write(str((tup1[0], new_contents)) + '\n')
+            line1 = index1.readline().strip('\n')
+            line2 = index2.readline().strip('\n')
+
+    index1.close()
+    index2.close()
+    output.close()
+
+
 
 def main():
     download_nltk_library()
 
     loop_corpus('DEV')
+
+    merge_indexes('pi0.txt', 'pi1.txt', 'merged1.txt')
+    print('1st merge done')
+    merge_indexes('merged1.txt', 'pi2.txt', 'merged2.txt')
+    print('2nd merge done')
+    merge_indexes('merged2.txt', 'pi3.txt', 'merged3.txt')
+    print('3rd merge done')
+    merge_indexes('merged3.txt', 'pi4.txt', 'merged4.txt')
+    print('4th merge done')
+    merge_indexes('merged4.txt', 'pi5.txt', 'merged5.txt')
+    print('5th merge done')
 
 
 if __name__ == "__main__":
