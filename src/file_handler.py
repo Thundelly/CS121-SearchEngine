@@ -58,17 +58,6 @@ class FileHandler:
         with open('doc_id.txt', 'a') as f:
             f.write(doc_id_list)
 
-    # def write_to_file(self, index_list):
-    #     for index in index_list:
-    #         if index != '':
-    #             char = index[0]
-    #             if char.isnumeric():
-    #                 with open('./db/num.txt', 'a') as file:
-    #                     file.write(index)
-    #             else:
-    #                 with open('./db/{}.txt'.format(char), 'a') as file:
-    #                     file.write(index)
-
     def write_to_file(self, index_id, index_dict):
         with open(f'./db/pi{index_id}.txt', 'w') as file:
             for line in sorted(index_dict.items()):
