@@ -83,6 +83,7 @@ class FileHandler:
             file.write(json_data)
 
     def get_index_status(self):
+        print("hello")
         with open('index_status.log', 'r') as file:
             status = json.loads(file.read())
 

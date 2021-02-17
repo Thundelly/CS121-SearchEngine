@@ -9,7 +9,9 @@ class SearchEngine:
         self.file_handler = FileHandler()
         self.indexer = Indexer('./DEV', self.file_handler, file_count_offset=10000)
 
+        print("here")
         if not self.file_handler.get_index_status():
+            print("here")
             self.index()
             self.merge()
 
