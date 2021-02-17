@@ -9,6 +9,8 @@ class SearchEngine:
         self.file_handler = FileHandler()
         self.indexer = Indexer(self.file_handler, file_count_offset=10000)
 
+        print("INDEX:", self.file_handler.get_index_status())
+
         if not self.file_handler.get_index_status():
             self.index()
             self.merge()
@@ -33,4 +35,4 @@ class SearchEngine:
 
 if __name__ == '__main__':
     search_engine = SearchEngine()
-    search_engine.merge()
+    # search_engine.merge()
