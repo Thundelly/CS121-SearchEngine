@@ -1,5 +1,8 @@
 import os
 from bs4 import BeautifulSoup
+from datetime import datetime
+
+import orjson
 
 try:
     import orjson as json
@@ -12,7 +15,8 @@ except ImportError:
 
 class FileHandler:
     def __init__(self):
-        pass
+        if not os.path.exists('./db'):
+            os.mkdir('./db')
 
     def walk_files(self, folder, file_extension=None):
         """
@@ -70,7 +74,7 @@ class FileHandler:
                 file.truncate(0)
 
         # print("CLEARING DOC ID FILE")
-        with open('./db/doc_id.txt', 'r+') as file:
+        with open('./db/doc_id.txt', 'w+') as file:
             file.truncate(0)
 
     def set_index_status(self, completed, timestamp):
@@ -83,10 +87,32 @@ class FileHandler:
             file.write(json_data)
 
     def get_index_status(self):
-        with open('index_status.log', 'r') as file:
-            status = json.loads(file.read())
+        try:
+            with open('index_status.log', 'r') as file:
+                status = json.loads(file.read())
 
-        return status["Last Completed"]
+            return status["Last Completed"]
+
+        except orjson.JSONDecodeError:
+            self.set_index_status(False, datetime.now())
+
+        except FileNotFoundError:
+            self.set_index_status(False, datetime.now())
+
+
+    def remove_merge_temp_files(self, current_temp):
+        if current_temp == 0:
+            os.remove('./db/temp1.txt')
+            os.rename('./db/temp0.txt', './db/index.txt')
+        else:
+            os.remove('./db/temp0.txt')
+            os.rename('./db/temp1.txt', './db/result.txt')
+
+    def clear_merge_temp_files(self):
+        with open('./db/temp0.txt', 'r+') as temp0, open('./db/temp1.txt', 'r+') as temp1:
+            temp0.truncate(0)
+            temp1.truncate(0)
+
 
 if __name__ == '__main__':
     file_handler = FileHandler()

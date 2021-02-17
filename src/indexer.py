@@ -10,12 +10,11 @@ from nltk.stem import SnowballStemmer
 
 
 class Indexer:
-    def __init__(self, folder_name, file_handler, file_count_offset):
+    def __init__(self, file_handler, file_count_offset):
         # Download the nltk library before indexing.
         self.download_nltk_library()
         self.doc_id_list = []
         self.doc_id = 1
-        self.folder_name = folder_name
         self.file_handler = file_handler
 
         self.file_count_offset = file_count_offset
@@ -90,7 +89,7 @@ class Indexer:
 
         return frequencies
 
-    def index(self, restart=False):
+    def index(self, folder_name, restart=False):
         # reset the files
         if restart:
             self.file_handler.clear_files()
@@ -102,7 +101,7 @@ class Indexer:
         index_id = 0
         index_dict = dict()
 
-        for file in self.file_handler.walk_files(self.folder_name, '.json'):
+        for file in self.file_handler.walk_files(folder_name, '.json'):
             url, normalText, importantText = self.file_handler.parse_file(file)
 
             normalText = self.tokenize(normalText)
@@ -151,71 +150,107 @@ class Indexer:
         temp_doc_id = ''.join(doc_id_list)
         self.file_handler.write_doc_id(temp_doc_id)
 
-    def merge_indexes(self, file1, file2, outputfile):
-        index1 = open(file1, 'r')
-        index2 = open(file2, 'r')
-        output = open(outputfile, 'w')
+    def merge_indexes(self, folder_path):
+        files_to_be_merged = []
 
-        line1 = index1.readline().strip('\n')
-        line2 = index2.readline().strip('\n')
+        # For every partial index files in the folder,
+        # add to the list to be merged.
+        for file in self.file_handler.walk_files(folder_path, '.txt'):
+            if 'pi' in file:
+                files_to_be_merged.append(file)
 
-        while True:
-            # If end of file 1 is reached, read the rest from file 2 and then break
-            if line1 == '':
-                while True:
+        current_temp = 0
+        
+        # Create two temp files
+        try:
+            open('./db/temp0.txt', 'x')
+            open('./db/temp1.txt', 'x')
+        # If files already exist, clear the files
+        except FileExistsError:
+            self.file_handler.clear_merge_temp_files()
+
+        while files_to_be_merged:
+            print(f"{len(files_to_be_merged)} more files to merge!")
+
+            file = files_to_be_merged.pop()
+
+            # input_temp and output_temp will alternate between temp0 and temp.
+            if current_temp == 0:
+                file = open(file, 'r')
+                input_temp = open('./db/temp0.txt', 'r')
+                output_temp = open('./db/temp1.txt', 'w')
+                
+            elif current_temp == 1:
+                file = open(file, 'r')
+                input_temp = open('./db/temp1.txt', 'r')
+                output_temp = open('./db/temp0.txt', 'w')
+            
+            # Get each line
+            line1 = file.readline().strip('\n')
+            line2 = input_temp.readline().strip('\n')
+
+            while True:
+
+                # If the first file is empty, add the content of the 
+                # second file to the output_temp
+                if line1 == '':
+                    while True:
+                        if line2 == '':
+                            break
+                        output_temp.write(line2 + '\n')
+                        line2 = input_temp.readline().strip('\n')
+                    break
+
+                # If the second file is empty, add the content of the
+                # first file to the output_temp
+                if line2 == '':
+                    while True:
+                        if line1 == '':
+                            break
+                        output_temp.write(line1 + '\n')
+                        line1 = file.readline().strip('\n')
+                    break
+
+                # If the files are not empty, get the first word
+                # in each files to be merged
+                word1 = eval(line1)[0]
+                word2 = eval(line2)[0]
+
+                # Check for lexicographical order and add
+                # the words that comes first to the output_temp
+                while word1 > word2:
+                    output_temp.write(line2 + '\n')
+                    line2 = input_temp.readline().strip('\n')
                     if line2 == '':
                         break
-                    output.write(line2 + '\n')
-                    line2 = index2.readline().strip('\n')
-                break
+                    word2 = eval(line2)[0]
 
-            # If end of file 2 is reached, read the rest from file 1 and then break
-            if line2 == '':
-                while True:
+                while word2 > word1:
+                    output_temp.write(line1 + '\n')
+                    line1 = file.readline().strip('\n')
                     if line1 == '':
                         break
-                    output.write(line1 + '\n')
-                    line1 = index1.readline().strip('\n')
-                break
+                    word1 = eval(line1)[0]
 
-            # get the two tuples from the two lines
-            tup1 = eval(line1)
-            tup2 = eval(line2)
+                # If the words are exactly the same, add the indexes of 
+                # both words and combine. Then add to the output_temp
+                if word1 == word2:
+                    output_temp.write(
+                        str((word1, {**eval(line1)[1], **eval(line2)[1]})) + '\n')
+                    line1 = file.readline().strip('\n')
+                    line2 = input_temp.readline().strip('\n')
 
-            # keep writing the first index's contents while the first line's token
-            # is smaller than the second line's
-            while tup1[0] < tup2[0]:
-                output.write(line1 + '\n')
-                line1 = index1.readline().strip('\n')
-                if line1 == '':
-                    break
-                tup1 = eval(line1)
+            file.close()
+            input_temp.close()
+            output_temp.close()
 
-            # keep writing the second index's contents while the second line's
-            # token is smaller than the first line's
-            while tup1[0] > tup2[0]:
-                output.write(line2 + '\n')
-                line2 = index2.readline().strip('\n')
-                if line2 == '':
-                    break
-                tup2 = eval(line2)
+            # Alternate between the temp files
+            if current_temp == 0:
+                current_temp = 1
+            else:
+                current_temp = 0
 
-            # at the end of these two loops, the first token should either be
-            # smaller than or equal to the second token (or either of the two have
-            # ended)
-
-            # if the tokens are equal, merge the contents
-            if tup1[0] == tup2[0]:
-                new_contents = {**tup1[1], **tup2[1]}
-                output.write(str((tup1[0], new_contents)) + '\n')
-                line1 = index1.readline().strip('\n')
-                line2 = index2.readline().strip('\n')
-
-        index1.close()
-        index2.close()
-        output.close()
-
-if __name__ == '__main__':
-    indexer = Indexer('DEV')
-    # indexer.index()
-    indexer.index(restart=True)
+        # Last merged file will be the final index
+        # and remove the temp files
+        self.file_handler.remove_merge_temp_files(current_temp)
+        print("Index merge complete.")
