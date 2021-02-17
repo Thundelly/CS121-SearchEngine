@@ -23,7 +23,7 @@ class FileHandler:
         for path, dirs, files in os.walk(folder, topdown=True):
             for filename in files:
                 if file_extension != None:
-                    if filename.endswith('.json'):
+                    if filename.endswith(file_extension):
                         yield path + '/' + filename
                 else:
                     yield path + '/' + filename

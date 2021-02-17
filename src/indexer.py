@@ -151,6 +151,69 @@ class Indexer:
         temp_doc_id = ''.join(doc_id_list)
         self.file_handler.write_doc_id(temp_doc_id)
 
+    def merge_indexes(self, file1, file2, outputfile):
+        index1 = open(file1, 'r')
+        index2 = open(file2, 'r')
+        output = open(outputfile, 'w')
+
+        line1 = index1.readline().strip('\n')
+        line2 = index2.readline().strip('\n')
+
+        while True:
+            # If end of file 1 is reached, read the rest from file 2 and then break
+            if line1 == '':
+                while True:
+                    if line2 == '':
+                        break
+                    output.write(line2 + '\n')
+                    line2 = index2.readline().strip('\n')
+                break
+
+            # If end of file 2 is reached, read the rest from file 1 and then break
+            if line2 == '':
+                while True:
+                    if line1 == '':
+                        break
+                    output.write(line1 + '\n')
+                    line1 = index1.readline().strip('\n')
+                break
+
+            # get the two tuples from the two lines
+            tup1 = eval(line1)
+            tup2 = eval(line2)
+
+            # keep writing the first index's contents while the first line's token
+            # is smaller than the second line's
+            while tup1[0] < tup2[0]:
+                output.write(line1 + '\n')
+                line1 = index1.readline().strip('\n')
+                if line1 == '':
+                    break
+                tup1 = eval(line1)
+
+            # keep writing the second index's contents while the second line's
+            # token is smaller than the first line's
+            while tup1[0] > tup2[0]:
+                output.write(line2 + '\n')
+                line2 = index2.readline().strip('\n')
+                if line2 == '':
+                    break
+                tup2 = eval(line2)
+
+            # at the end of these two loops, the first token should either be
+            # smaller than or equal to the second token (or either of the two have
+            # ended)
+
+            # if the tokens are equal, merge the contents
+            if tup1[0] == tup2[0]:
+                new_contents = {**tup1[1], **tup2[1]}
+                output.write(str((tup1[0], new_contents)) + '\n')
+                line1 = index1.readline().strip('\n')
+                line2 = index2.readline().strip('\n')
+
+        index1.close()
+        index2.close()
+        output.close()
 
 if __name__ == '__main__':
     indexer = Indexer('DEV')
