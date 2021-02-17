@@ -1,7 +1,9 @@
 import ssl
 import os
+import math
 from pprint import pprint
 from datetime import datetime
+from file_handler import FileHandler
 
 import nltk
 from nltk.corpus.reader import wordlist
@@ -215,7 +217,114 @@ class Indexer:
         index2.close()
         output.close()
 
+    def calculate_tf_idf(self, file, outputfile, size):
+        """
+        Calculates tf_idf score by multiplying the term frequency (tf)
+        and inverse document frequency (idf). Stores the result 
+        in the outputfile.
+
+        idf score has the following formula:
+        log(1 + n / (1 + d(t))) + 1
+
+        Input Parameter: 
+        file -> the inverted index file
+        outputfile -> the file to store the tf_idf values
+        size -> the number of files in corpus
+
+        Return Value: 
+        A normalized dictionary contains doc_id and 
+        its lenght (square root of all td-idf^2 scores)
+        """
+        
+        inverted_index = open(file, 'r')
+        tf_idf_index = open(outputfile, 'w')
+        
+        tf_idf_normalizers = dict()
+        temp_dict = dict()
+        count = 1
+
+        for line in inverted_index:
+            # gets the tuple item from inverted index file 
+            tup = eval(line.strip('\n'))
+            
+            # gets the number of documents in the corpus that contain the word
+            # uses it to calculate idf value 
+            doc_freq = len(tup[1])
+            idf_value = math.log((size + 1) / (doc_freq + 1)) + 1
+    
+            # stores the tf_idf value into the temp dictionary 
+            # and add (tf_idf)^2 to the tf_idf_normalizers 
+            for doc_id, tf_value in tup[1].items():
+                tf_idf = tf_value[0] * idf_value
+                temp_dict[doc_id] = (tf_idf, tf_value[1])
+
+                if doc_id not in tf_idf_normalizers:
+                    tf_idf_normalizers[doc_id] = tf_idf * tf_idf
+                else:
+                    tf_idf_normalizers[doc_id] += (tf_idf * tf_idf)
+
+            # writes the tf_idf value to the output file and
+            # clears temp_dict for the next loop (next line)
+            tf_idf_index.write(str((tup[0], temp_dict)) + '\n')
+            temp_dict.clear()
+
+            # keeptracks of the current status while running this function
+            count += 1
+            if count % 1000 == 0:
+                print(f'{count} words calculated!')
+
+        inverted_index.close()
+        tf_idf_index.close()
+
+        # square roots all of the values of normalizers
+        for doc_id in tf_idf_normalizers.keys():
+            tf_idf_normalizers[doc_id] = math.sqrt(tf_idf_normalizers[doc_id])
+
+        # returns the normalizers dict (we need this for the normalize function!)
+        return tf_idf_normalizers
+    
+    def normalize_tf_idf(file, outputfile, normalizer):
+        """
+        Normalizes tf_idf value by dividing the old tf_idf value with its lenght 
+        (square root of all td-idf^2 scores) from calculate_tf_idf function.
+
+        Input Parameter:
+        file -> the outputfile from the calculate_tf_idf function 
+        outputfile -> the file to store the result of the normalized tf_idf value  
+        normalizer -> the returned dictionary from the calculate_if_idf function 
+
+        Return Value: 
+        None
+        """
+        tf_idf_index = open(file, 'r')
+        final_index = open(outputfile, 'w')
+
+        temp_dict = dict()
+        count = 1
+
+        for line in tf_idf_index:
+            tup = eval(line.strip('\n'))
+
+            # normalizes the tf_idf value and stores it inside the temp dictionary
+            for doc_id, data in tup[1].items():
+                temp_dict[doc_id] = (data[0] / normalizer[doc_id], data[1])
+
+            # writes the normalized tf_idf value to the output file and
+            # clears temp_dict for the next loop (next line)
+            final_index.write(str((tup[0], temp_dict)) + '\n')
+            temp_dict.clear()
+
+            # keeptracks of the current status while running this function
+            count += 1
+            if count % 1000 == 0:
+                print(f'{count} words normalized!')
+
+        tf_idf_index.close()
+        final_index.close()
+
 if __name__ == '__main__':
-    indexer = Indexer('DEV')
+    indexer = Indexer('DEV', FileHandler(), file_count_offset=10000)
     # indexer.index()
-    indexer.index(restart=True)
+    # indexer.index(restart=True)
+    d = indexer.calculate_tf_idf('test.txt', 'output.txt', 12)
+    print(d)

@@ -83,11 +83,21 @@ class FileHandler:
             file.write(json_data)
 
     def get_index_status(self):
-        print("hello")
         with open('index_status.log', 'r') as file:
             status = json.loads(file.read())
 
         return status["Last Completed"]
+
+    def read_set(self, filename):
+        """
+        Read file line by line and return a set object 
+        """
+        with open(filename) as f: 
+            while True:
+                line = f.readline().strip('\n')
+                if line:
+                    break 
+                yield eval(line)
 
 if __name__ == '__main__':
     file_handler = FileHandler()
