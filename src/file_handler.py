@@ -2,8 +2,6 @@ import os
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-import orjson
-
 try:
     import orjson as json
 except ImportError:
@@ -78,27 +76,19 @@ class FileHandler:
             file.truncate(0)
 
     def set_index_status(self, completed, timestamp):
-        status = {
-            "Last Completed": completed,
-            "Last Run": timestamp
-        }
-        with open('index_status.log', 'wb') as file:
-            json_data = json.dumps(status)
-            file.write(json_data)
+
+        with open('index_status.log', 'w+') as log:
+            log.write(f'completed={completed}\nlast_run={timestamp}')
 
     def get_index_status(self):
-        try:
-            with open('index_status.log', 'r') as file:
-                status = json.loads(file.read())
 
-            return status["Last Completed"]
+        with open('index_status.log', 'r') as log:
+            status = log.readline()[10:].strip('\n')
 
-        except orjson.JSONDecodeError:
-            self.set_index_status(False, datetime.now())
-
-        except FileNotFoundError:
-            self.set_index_status(False, datetime.now())
-
+            if status == 'True':
+                return True
+            elif status == 'False':
+                return False
 
     def remove_merge_temp_files(self, current_temp):
         if current_temp == 0:
@@ -113,17 +103,17 @@ class FileHandler:
             temp0.truncate(0)
             temp1.truncate(0)
 
-
     def read_set(self, filename):
         """
         Read file line by line and return a set object 
         """
-        with open(filename) as f: 
+        with open(filename) as f:
             while True:
                 line = f.readline().strip('\n')
                 if line:
-                    break 
+                    break
                 yield eval(line)
+
 
 if __name__ == '__main__':
     file_handler = FileHandler()
