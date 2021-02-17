@@ -9,6 +9,7 @@ except ImportError:
     except ImportError:
         import json
 
+
 class FileHandler:
     def __init__(self):
         pass
@@ -22,7 +23,7 @@ class FileHandler:
         for path, dirs, files in os.walk(folder, topdown=True):
             for filename in files:
                 if file_extension != None:
-                    if filename.endswith('.json'):
+                    if filename.endswith(file_extension):
                         yield path + '/' + filename
                 else:
                     yield path + '/' + filename
@@ -44,39 +45,48 @@ class FileHandler:
             text = soup.text
 
             # find all the important text from the specified tags
-            weighted = ''
+            weighted = []
             for s in soup.find_all(['b', 'strong', 'h1', 'h2', 'h3', 'title']):
-                weighted += s.getText().strip() + ' '
+                weighted.append(s.getText().strip() + ' ')
 
-        return (file_info['url'], text, weighted)
+        return (file_info['url'], text, ''.join(weighted))
 
     def write_doc_id(self, doc_id_list):
         """
         Writes doc_id_list to doc_id.txt 
         """
-        with open('doc_id.txt', 'a') as f:
+        with open('./db/doc_id.txt', 'a') as f:
             f.write(doc_id_list)
 
-    def write_to_file(self, index_list):
-        for index in index_list:
-            if index != '':
-                char = index[0]
-                if char.isnumeric():
-                    with open('./db/num.txt', 'a') as file:
-                        file.write(index)
-                else:
-                    with open('./db/{}.txt'.format(char), 'a') as file:
-                        file.write(index)
+    def write_to_file(self, index_id, index_dict):
+        with open(f'./db/pi{index_id}.txt', 'w') as file:
+            for line in sorted(index_dict.items()):
+                file.write(str(line) + '\n')
 
     def clear_files(self):
-        print("CLEARING INDEX FILES")
+        # print("CLEARING INDEX FILES")
         for file in self.walk_files('db'):
             with open(file, 'r+') as file:
                 file.truncate(0)
 
-        print("CLEARING DOC ID FILE")
-        with open('doc_id.txt', 'r+') as file:
+        # print("CLEARING DOC ID FILE")
+        with open('./db/doc_id.txt', 'r+') as file:
             file.truncate(0)
+
+    def set_index_status(self, completed, timestamp):
+        status = {
+            "Last Completed": completed,
+            "Last Run": timestamp
+        }
+        with open('index_status.log', 'wb') as file:
+            json_data = json.dumps(status)
+            file.write(json_data)
+
+    def get_index_status(self):
+        with open('index_status.log', 'r') as file:
+            status = json.loads(file.read())
+
+        return status["Last Completed"]
 
 if __name__ == '__main__':
     file_handler = FileHandler()
