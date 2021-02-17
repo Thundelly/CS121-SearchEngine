@@ -9,7 +9,12 @@ class SearchEngine:
         self.file_handler = FileHandler()
         self.indexer = Indexer('./DEV', self.file_handler, file_count_offset=10000)
 
-        if not self.file_handler.get_index_status():
+        try:
+            if not self.file_handler.get_index_status():
+                self.index()
+                self.merge()
+        except:
+            self.file_handler.set_index_status(False, datetime.now())
             self.index()
             self.merge()
 
@@ -45,3 +50,4 @@ class SearchEngine:
 if __name__ == '__main__':
     search_engine = SearchEngine()
     # search_engine.run()
+    search_engine.indexer.merge_indexes('./test/test1.txt', './test/test2.txt', './result1.txt')
