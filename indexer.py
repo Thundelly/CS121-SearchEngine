@@ -194,30 +194,51 @@ def merge_indexes(file1, file2, outputfile):
     output.close()
 
 
+# file is the index with the frequencies (probably the last merged.txt)
+# outputfile is the file where you wanna write the new index to
+# size is the size of the corpus (55393)
 def calculate_tf_idf(file, outputfile, size):
     freq_index = open(file, 'r')
     tf_idf_index = open(outputfile, 'w')
+
+    # this dict gets the square root of the sum of all squares of td-idf scores
+    # in the doc. (we need this for normalizing)
     tf_idf_normalizers = dict()
 
     new_dict = dict()
     count = 1
+
+    # loops through freq_index line by line
     while True:
         line = freq_index.readline().strip('\n')
         if line == '':
             break
         tup = eval(line)
 
+        # doc_freq is the number of documents the token appears in (basically i
+        # just took the length of the dict associated with the token
         doc_freq = len(tup[1])
         for doc_id, data in tup[1].items():
+            # actually calculates the tf-idf bullshit
             tf_idf = data[0] * math.log((1 + size) / (1 + doc_freq)) + 1
+            # stores the td_idf score to new_dict[doc_id]
             new_dict[doc_id] = (tf_idf, data[1])
+
+            # adds the square of the tf_idf score to the normalizers
             if doc_id not in tf_idf_normalizers:
                 tf_idf_normalizers[doc_id] = tf_idf * tf_idf
             else:
                 tf_idf_normalizers[doc_id] += (tf_idf * tf_idf)
 
+        # writes the new line (with new_dict containing the tf-idf scores) to
+        # outputfile
         tf_idf_index.write(str((tup[0], new_dict)) + '\n')
+
+        # clears new_dict for the next loop (next line)
         new_dict.clear()
+
+        # just keeping track of how many lines we looped through (tbh u can
+        # delete if u want)
         count += 1
         if count % 1000 == 0:
             print(f'{count} words calculated!')
@@ -225,12 +246,15 @@ def calculate_tf_idf(file, outputfile, size):
     freq_index.close()
     tf_idf_index.close()
 
+    # square roots all of the values of normalizers
     for doc_id in tf_idf_normalizers.keys():
         tf_idf_normalizers[doc_id] = math.sqrt(tf_idf_normalizers[doc_id])
 
+    # returns the normalizers dict (we need this for the normalize function!)
     return tf_idf_normalizers
 
 
+# normalizer is the dict returned from the calculate_tf_idf function
 def normalize_tf_idf(file, outputfile, normalizer):
     tf_idf_index = open(file, 'r')
     final_index = open(outputfile, 'w')
@@ -243,11 +267,17 @@ def normalize_tf_idf(file, outputfile, normalizer):
             break
         tup = eval(line)
 
+        # basically the new tf_idf score is the old tf_idf score divided by
+        # the square root of sum of squares of all tf_idf scores in the doc.
+        # this ensures that the score is always between 0-1 i think
         for doc_id, data in tup[1].items():
             new_dict[doc_id] = (data[0] / normalizer[doc_id], data[1])
 
         final_index.write(str((tup[0], new_dict)) + '\n')
         new_dict.clear()
+
+        # used to keep track of how many lines looped (tbh u can delete if u
+        # want also)
         count += 1
         if count % 1000 == 0:
             print(f'{count} words normalized!')
