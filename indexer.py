@@ -7,6 +7,7 @@ from nltk.stem import WordNetLemmatizer, PorterStemmer, SnowballStemmer
 
 import os
 import ssl
+import math
 
 
 ALPHANUMERIC = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -193,6 +194,67 @@ def merge_indexes(file1, file2, outputfile):
     output.close()
 
 
+def calculate_tf_idf(file, outputfile, size):
+    freq_index = open(file, 'r')
+    tf_idf_index = open(outputfile, 'w')
+    tf_idf_normalizers = dict()
+
+    new_dict = dict()
+    count = 1
+    while True:
+        line = freq_index.readline().strip('\n')
+        if line == '':
+            break
+        tup = eval(line)
+
+        doc_freq = len(tup[1])
+        for doc_id, data in tup[1].items():
+            tf_idf = data[0] * math.log((1 + size) / (1 + doc_freq)) + 1
+            new_dict[doc_id] = (tf_idf, data[1])
+            if doc_id not in tf_idf_normalizers:
+                tf_idf_normalizers[doc_id] = tf_idf * tf_idf
+            else:
+                tf_idf_normalizers[doc_id] += (tf_idf * tf_idf)
+
+        tf_idf_index.write(str((tup[0], new_dict)) + '\n')
+        new_dict.clear()
+        count += 1
+        if count % 1000 == 0:
+            print(f'{count} words calculated!')
+
+    freq_index.close()
+    tf_idf_index.close()
+
+    for doc_id in tf_idf_normalizers.keys():
+        tf_idf_normalizers[doc_id] = math.sqrt(tf_idf_normalizers[doc_id])
+
+    return tf_idf_normalizers
+
+
+def normalize_tf_idf(file, outputfile, normalizer):
+    tf_idf_index = open(file, 'r')
+    final_index = open(outputfile, 'w')
+
+    new_dict = dict()
+    count = 1
+    while True:
+        line = tf_idf_index.readline().strip('\n')
+        if line == '':
+            break
+        tup = eval(line)
+
+        for doc_id, data in tup[1].items():
+            new_dict[doc_id] = (data[0] / normalizer[doc_id], data[1])
+
+        final_index.write(str((tup[0], new_dict)) + '\n')
+        new_dict.clear()
+        count += 1
+        if count % 1000 == 0:
+            print(f'{count} words normalized!')
+
+    tf_idf_index.close()
+    final_index.close()
+
 
 def main():
     download_nltk_library()
@@ -212,4 +274,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    d = calculate_tf_idf('merged5.txt', 'tf_idf.txt', 55393)
+    normalize_tf_idf('tf_idf.txt', 'final_index.txt', d)
