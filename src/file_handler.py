@@ -114,6 +114,17 @@ class FileHandler:
             temp1.truncate(0)
 
 
+    def read_set(self, filename):
+        """
+        Read file line by line and return a set object 
+        """
+        with open(filename) as f: 
+            while True:
+                line = f.readline().strip('\n')
+                if line:
+                    break 
+                yield eval(line)
+
 if __name__ == '__main__':
     file_handler = FileHandler()
     file_handler.clear_files()
