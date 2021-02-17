@@ -1,5 +1,6 @@
-*.json
 nltk_data
 .DS_Store
+*.json
 *.txt
-nltk_data/corpora/
+*.pdf
+*.zip
