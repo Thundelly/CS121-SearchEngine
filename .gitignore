@@ -1,0 +1,6 @@
+nltk_data
+.DS_Store
+*.json
+*.txt
+*.pdf
+*.zip
