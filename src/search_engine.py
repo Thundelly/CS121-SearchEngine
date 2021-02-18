@@ -9,24 +9,18 @@ class SearchEngine:
         self.file_handler = FileHandler()
         self.indexer = Indexer(self.file_handler, file_count_offset=10000)
 
-        print("INDEX:", self.file_handler.get_index_status())
-
         if not self.file_handler.get_index_status():
             self.index()
-            self.merge()
 
     def index(self):
         start_time = datetime.now()
+
         self.indexer.index('./DEV', restart=True)
-        end_time = datetime.now()
+        self.file_handler.merge_indexes()
+        normalizer = self.indexer.calculate_tf_idf(
+            './db/index.txt', './db/index_tf_idf.txt', self.file_handler.count_number_of_line('./db/index.txt'))
+        self.indexer.normalize_tf_idf('./db/index_tf_idf.txt', './db/index.txt', normalizer)
 
-        print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {}\n".format(
-            start_time, end_time, end_time-start_time))
-
-    def merge(self):
-
-        start_time = datetime.now()
-        self.indexer.merge_indexes('./db')
         end_time = datetime.now()
 
         print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {}\n".format(
@@ -35,4 +29,4 @@ class SearchEngine:
 
 if __name__ == '__main__':
     search_engine = SearchEngine()
-    # search_engine.merge()
+
