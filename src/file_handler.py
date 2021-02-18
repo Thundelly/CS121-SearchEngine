@@ -120,6 +120,10 @@ class FileHandler:
         """
         json.dump(d, filename)
 
+    def json_load(self, filename):
+        with open(filename, 'r') as f:
+            return json.load(f)
+
 
 if __name__ == '__main__':
     file_handler = FileHandler()
