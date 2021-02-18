@@ -310,7 +310,7 @@ class Indexer:
 
             # keeptracks of the current status while running this function
             count += 1
-            if count % 1000 == 0:
+            if count % 10000 == 0:
                 print(f'{count} words calculated!')
 
         inverted_index.close()
@@ -356,11 +356,63 @@ class Indexer:
 
             # keeptracks of the current status while running this function
             count += 1
-            if count % 1000 == 0:
+            if count % 10000 == 0:
                 print(f'{count} words normalized!')
 
         tf_idf_index.close()
         final_index.close()
+
+    def get_fp_locations(self, index_file, fp_file):
+        """
+        Gets the file pointer location of each word's line in the index using
+        the tell function and writes it to a dict. This dict is then dumped
+        as a json.
+
+        Input Parameter:
+        index_file -> the outputfile from the normalize_tf_idf function (the
+        final index)
+        fp_file -> the file to store the result of the file pointer locations
+
+        Return Value:
+        None
+        """
+        index = open(index_file, 'r')
+        fp_locations = open(fp_file, 'w')
+
+        # fp_dict is the dict that stores the file pointer locations.
+        # key: token, element: file pointer location int
+        fp_dict = dict()
+        count = 1
+
+        while True:
+            # check where the file pointer is at currently
+            fp = index.tell()
+
+            # then read the line
+            line = index.readline().strip('\n')
+
+            # end loop if the end of the file is reached
+            if line == '':
+                break
+
+            tup = eval(line)
+
+            # adds the file pointer location to fp_dict's token key
+            fp_dict[tup[0]] = fp
+
+            # keeptracks of the current status while running this function
+            count += 1
+            if count % 10000 == 0:
+                print(f"{count} words' file locations found!")
+
+        # dumps the dict as a json
+        print("Dumping the file pointer dict...")
+        self.file_handler.json_dump(fp_dict, fp_locations)
+
+        index.close()
+        fp_locations.close()
+
+
 
 if __name__ == '__main__':
     indexer = Indexer('DEV', FileHandler(), file_count_offset=10000)

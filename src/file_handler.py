@@ -114,6 +114,12 @@ class FileHandler:
                     break
                 yield eval(line)
 
+    def json_dump(self, d, filename):
+        """
+        Dumps dict d to a file
+        """
+        json.dump(d, filename)
+
 
 if __name__ == '__main__':
     file_handler = FileHandler()
