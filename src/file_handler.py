@@ -53,13 +53,6 @@ class FileHandler:
 
         return (file_info['url'], text, ''.join(weighted))
 
-    def write_doc_id(self, doc_id_list):
-        """
-        Writes doc_id_list to doc_id.txt 
-        """
-        with open('./db/doc_id.txt', 'a') as f:
-            f.write(doc_id_list)
-
     def write_to_file(self, index_id, index_dict):
         with open(f'./db/pi{index_id}.txt', 'w') as file:
             for line in sorted(index_dict.items()):
@@ -102,17 +95,6 @@ class FileHandler:
         with open('./db/temp0.txt', 'r+') as temp0, open('./db/temp1.txt', 'r+') as temp1:
             temp0.truncate(0)
             temp1.truncate(0)
-
-    def read_set(self, filename):
-        """
-        Read file line by line and return a set object 
-        """
-        with open(filename) as f:
-            while True:
-                line = f.readline().strip('\n')
-                if line:
-                    break
-                yield eval(line)
 
     def json_dump(self, d, filename):
         """

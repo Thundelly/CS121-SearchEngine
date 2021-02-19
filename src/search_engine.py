@@ -20,8 +20,9 @@ class SearchEngine:
             self.tf_idf()
             self.fp_locations()
 
-        self.fp_dict = self.file_handler.json_load('./db/fp_locations.txt')
+        self.fp_dict = self.file_handler.json_load('./db/fp_locations.json')
         self.final_index = open('./db/final_index.txt')
+        self.doc_id = self.file_handler.json_load('./db/doc_id.json')
 
     def index(self):
         start_time = datetime.now()
@@ -42,7 +43,8 @@ class SearchEngine:
     def tf_idf(self):
         start_time = datetime.now()
         # NOTE: change the value once we filter urls
-        d = self.indexer.calculate_tf_idf('./db/index.txt', './db/partial_tf_idf.txt', 55393)
+        size = len(self.file_handler.json_load('./db/doc_id.json'))
+        d = self.indexer.calculate_tf_idf('./db/index.txt', './db/partial_tf_idf.txt', size)
         self.indexer.normalize_tf_idf('./db/partial_tf_idf.txt', './db/final_index.txt', d)
         end_time = datetime.now()
         print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {}\n".format(
@@ -50,7 +52,7 @@ class SearchEngine:
 
     def fp_locations(self):
         start_time = datetime.now()
-        self.indexer.get_fp_locations('./db/final_index.txt', './db/fp_locations.txt')
+        self.indexer.get_fp_locations('./db/final_index.txt', './db/fp_locations.json')
         end_time = datetime.now()
 
         print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {}\n".format(
@@ -78,7 +80,7 @@ class SearchEngine:
             sorted_tup = sorted(scores.items(), key=lambda item: item[1], reverse=True)
             for i in range(5):
                 try:
-                    print(sorted_tup[i][0])
+                    print(self.doc_id[str(sorted_tup[i][0])])
                 except IndexError:
                     break
         else:

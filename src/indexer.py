@@ -10,12 +10,14 @@ from nltk.corpus.reader import wordlist
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem import SnowballStemmer
 
+from urllib.parse import urldefrag
+
 
 class Indexer:
     def __init__(self, file_handler, file_count_offset):
         # Download the nltk library before indexing.
         self.download_nltk_library()
-        self.doc_id_list = []
+        self.doc_id_dict = dict()
         self.doc_id = 1
         self.file_handler = file_handler
 
@@ -70,14 +72,14 @@ class Indexer:
     def add_doc_id(self, url):
         """
         Appends a new url to the doc_id_list and increments the doc_id
-        If the list len is larger than ...., then call write_doc_id function
+        If the list len is larger than ...., then call dump json
         """
-        self.doc_id_list.append(f'{self.doc_id}, {url}\n')
+        self.doc_id_dict[self.doc_id] = url
         self.doc_id += 1
 
-        if len(self.doc_id_list) > self.file_count_offset:
-            self.dump_doc_id(self.doc_id_list)
-            self.doc_id_list.clear()
+        # if len(self.doc_id_dict) > self.file_count_offset:
+        #     self.file_handler.write_doc_id(self.doc_id_dict)
+        #     self.doc_id_dict.clear()
 
     def compute_word_frequencies(self, token_list):
         frequencies = dict()
@@ -102,39 +104,47 @@ class Indexer:
 
         index_id = 0
         index_dict = dict()
+        traversed = set()
 
         for file in self.file_handler.walk_files(folder_name, '.json'):
             url, normalText, importantText = self.file_handler.parse_file(file)
 
-            normalText = self.tokenize(normalText)
-            importantText = set(self.tokenize(importantText))
+            url = urldefrag(url)[0]
 
-            # Find frequencies of each word
-            frequencies = self.compute_word_frequencies(normalText)
+            # don't count if we already traversed the url (defragged)
+            if url not in traversed:
+                normalText = self.tokenize(normalText)
+                importantText = set(self.tokenize(importantText))
 
-            for word, frequency in frequencies.items():
-                if word not in index_dict:
-                    index_dict[word] = dict()
+                # Find frequencies of each word
+                frequencies = self.compute_word_frequencies(normalText)
 
-                if word in importantText:
-                    index_dict[word][self.doc_id] = (frequency, 1)
-                else:
-                    index_dict[word][self.doc_id] = (frequency, 0)
+                for word, frequency in frequencies.items():
+                    if word not in index_dict:
+                        index_dict[word] = dict()
 
-            # Keep record of doc id and url
-            self.add_doc_id(url)
+                    if word in importantText:
+                        index_dict[word][self.doc_id] = (frequency, 1)
+                    else:
+                        index_dict[word][self.doc_id] = (frequency, 0)
 
-            if self.doc_id % 100 == 0:
-                print(f'Looped through {self.doc_id} pages!')
+                # Keep record of doc id and url
+                self.add_doc_id(url)
 
-            # Offload every 10,000 pages
-            if self.doc_id % self.file_count_offset == 0:
-                print(
-                    f'Looped through {self.doc_id} pages. Offloading to pi{index_id}')
-                self.file_handler.write_to_file(index_id, index_dict)
-                index_dict.clear()
-                index_id += 1
-                print('Done with offloading, continuing.')
+                # Add url to the traversed set
+                traversed.add(url)
+
+                if self.doc_id % 100 == 0:
+                    print(f'Looped through {self.doc_id} pages!')
+
+                # Offload every 10,000 pages
+                if self.doc_id % self.file_count_offset == 0:
+                    print(
+                        f'Looped through {self.doc_id} pages. Offloading to pi{index_id}')
+                    self.file_handler.write_to_file(index_id, index_dict)
+                    index_dict.clear()
+                    index_id += 1
+                    print('Done with offloading, continuing.')
 
         # Final offload
         print(f'Looped through every page. Offloading to pi{index_id}')
@@ -145,12 +155,9 @@ class Indexer:
         self.file_handler.set_index_status(True, last_ran_timestamp)
 
         # dumping doc id list
-        self.dump_doc_id(self.doc_id_list)
-        self.doc_id_list.clear()
-
-    def dump_doc_id(self, doc_id_list):
-        temp_doc_id = ''.join(doc_id_list)
-        self.file_handler.write_doc_id(temp_doc_id)
+        with open('./db/doc_id.json', 'w') as doc_id_file:
+            self.file_handler.json_dump(self.doc_id_dict, doc_id_file)
+        self.doc_id_dict.clear()
 
     def merge_indexes(self, folder_path):
         files_to_be_merged = []
