@@ -102,17 +102,6 @@ class FileHandler:
             if 'tf_idf' in file:
                 os.remove(file)
 
-    def read_set(self, filename):
-        """
-        Read file line by line and return a set object 
-        """
-        with open(filename) as f:
-            while True:
-                line = f.readline().strip('\n')
-                if line:
-                    break
-                yield eval(line)
-
     def count_number_of_line(self, filename):
         count = 0
 

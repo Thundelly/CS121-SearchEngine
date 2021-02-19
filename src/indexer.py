@@ -12,7 +12,6 @@ from nltk.stem import SnowballStemmer
 
 from urllib.parse import urldefrag
 
-
 class Indexer:
     def __init__(self, file_handler, file_count_offset):
         # Download the nltk library before indexing.
@@ -233,8 +232,9 @@ class Indexer:
                 # If the words are exactly the same, add the indexes of
                 # both words and combine. Then add to the output_temp
                 if word1 == word2:
+                    temp_dict = self.merge_posting(eval(ine1)[1], eval(line2)[1])
                     output_temp.write(
-                        str((word1, {**eval(line1)[1], **eval(line2)[1]})) + '\n')
+                        str((word1, temp_dict)) + '\n')
                     line1 = file.readline().strip('\n')
                     line2 = input_temp.readline().strip('\n')
 
@@ -418,3 +418,16 @@ class Indexer:
 
         # Set index status to True
         self.file_handler.set_index_status(True, last_ran_timestamp)
+
+    def merge_posting(self, line1, line2):
+        d = {k : v for k, v in sorted({** line1, **line2}.items())}
+        return d
+        
+        
+
+
+if __name__ == '__main__':
+    test = Indexer(FileHandler(), file_count_offset=10000)
+    line1 = {14300: (1, 0), 14435: (1, 0), 14447: (4, 1), 14462: (8, 1), 14572: (1, 0), 14609: (1, 0), 14793: (1, 0), 14828: (46, 1), 14860: (1, 0), 14865: (2, 0), 14893: (3, 0)}
+    line2 = {14301: (1, 0)}
+    test.merge_posting(line1, line2)
