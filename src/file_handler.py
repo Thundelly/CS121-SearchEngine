@@ -1,14 +1,7 @@
 import os
 from bs4 import BeautifulSoup
-from datetime import datetime
 
-try:
-    import orjson as json
-except ImportError:
-    try:
-        import ujson as json
-    except ImportError:
-        import json
+import json
 
 
 class FileHandler:
@@ -37,7 +30,7 @@ class FileHandler:
         """
         # opens json file and uses orjson to load the file
         with open(filename, 'r') as f:
-            file_info = json.loads(f.read())
+            file_info = json.load(f)
 
             # parses the content of the file useing BeautifulSoup
             # uses lxml for better perfomance
@@ -53,12 +46,12 @@ class FileHandler:
 
         return (file_info['url'], text, ''.join(weighted))
 
-    def write_doc_id(self, doc_id_list):
-        """
-        Writes doc_id_list to doc_id.txt 
-        """
-        with open('./db/doc_id.txt', 'a') as f:
-            f.write(doc_id_list)
+    # def write_doc_id(self, doc_id_dict):
+    #     """
+    #     Writes doc_id_list to doc_id.txt 
+    #     """
+    #     with open('./db/doc_id.json', 'wb') as f:
+    #         json.dump(doc_id_dict, f)
 
     def write_to_file(self, index_id, index_dict):
         with open(f'./db/pi{index_id}.txt', 'w') as file:
@@ -70,10 +63,6 @@ class FileHandler:
         for file in self.walk_files('db'):
             with open(file, 'r+') as file:
                 file.truncate(0)
-
-        # print("CLEARING DOC ID FILE")
-        with open('./db/doc_id.txt', 'w+') as file:
-            file.truncate(0)
 
     def set_index_status(self, completed, timestamp):
 
@@ -143,7 +132,7 @@ class FileHandler:
                 files_to_be_merged.append(file)
 
         current_temp = 0
-        
+
         # Create two temp files
         try:
             open('./db/temp0.txt', 'x')
@@ -162,19 +151,19 @@ class FileHandler:
                 file = open(file, 'r')
                 input_temp = open('./db/temp0.txt', 'r')
                 output_temp = open('./db/temp1.txt', 'w')
-                
+
             elif current_temp == 1:
                 file = open(file, 'r')
                 input_temp = open('./db/temp1.txt', 'r')
                 output_temp = open('./db/temp0.txt', 'w')
-            
+
             # Get each line
             line1 = file.readline().strip('\n')
             line2 = input_temp.readline().strip('\n')
 
             while True:
 
-                # If the first file is empty, add the content of the 
+                # If the first file is empty, add the content of the
                 # second file to the output_temp
                 if line1 == '':
                     while True:
@@ -215,7 +204,7 @@ class FileHandler:
                         break
                     word1 = eval(line1)[0]
 
-                # If the words are exactly the same, add the indexes of 
+                # If the words are exactly the same, add the indexes of
                 # both words and combine. Then add to the output_temp
                 if word1 == word2:
                     output_temp.write(
@@ -239,7 +228,18 @@ class FileHandler:
         self.remove_partial_indexes()
         print("Index merge complete.")
 
+    def dump_json(self, dict, filename):
+        """
+        Dumps dictionary dict to a file
+        """
+        try:
+            with open(filename, 'w') as f:
+                json.dump(dict, f)
 
-if __name__ == '__main__':
-    file_handler = FileHandler()
-    file_handler.clear_files()
+        except TypeError:
+            json.dump(dict, filename)
+
+
+    def load_json(self, filename):
+        with open(filename, 'r') as f:
+            return json.load(f)

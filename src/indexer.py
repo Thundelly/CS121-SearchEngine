@@ -10,12 +10,14 @@ from nltk.corpus.reader import wordlist
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem import SnowballStemmer
 
+from urllib.parse import urldefrag
+
 
 class Indexer:
     def __init__(self, file_handler, file_count_offset):
         # Download the nltk library before indexing.
         self.download_nltk_library()
-        self.doc_id_list = []
+        self.doc_id_dict = dict()
         self.doc_id = 1
         self.file_handler = file_handler
 
@@ -68,12 +70,12 @@ class Indexer:
         Appends a new url to the doc_id_list and increments the doc_id
         If the list len is larger than ...., then call write_doc_id function
         """
-        self.doc_id_list.append(f'{self.doc_id}, {url}\n')
+        self.doc_id_dict[str(self.doc_id)] = url 
         self.doc_id += 1
 
-        if len(self.doc_id_list) > self.file_count_offset:
-            self.dump_doc_id(self.doc_id_list)
-            self.doc_id_list.clear()
+        # if len(self.doc_id_list) > self.file_count_offset:
+        #     self.dump_doc_id(self.doc_id_list)
+        #     self.doc_id_list.clear()
 
     def compute_word_frequencies(self, token_list):
         frequencies = dict()
@@ -94,27 +96,35 @@ class Indexer:
 
         index_id = 0
         index_dict = dict()
+        traversed = set()
 
         for file in self.file_handler.walk_files(folder_name, '.json'):
             url, normalText, importantText = self.file_handler.parse_file(file)
 
-            normalText = self.tokenize(normalText)
-            importantText = set(self.tokenize(importantText))
+            url = urldefrag(url)[0]
 
-            # Find frequencies of each word
-            frequencies = self.compute_word_frequencies(normalText)
+            # don't count if we already traversed the url (defragged)
+            if url not in traversed:
+                normalText = self.tokenize(normalText)
+                importantText = set(self.tokenize(importantText))
 
-            for word, frequency in frequencies.items():
-                if word not in index_dict:
-                    index_dict[word] = dict()
+                # Find frequencies of each word
+                frequencies = self.compute_word_frequencies(normalText)
 
-                if word in importantText:
-                    index_dict[word][self.doc_id] = (frequency, 1)
-                else:
-                    index_dict[word][self.doc_id] = (frequency, 0)
+                for word, frequency in frequencies.items():
+                    if word not in index_dict:
+                        index_dict[word] = dict()
 
-            # Keep record of doc id and url
-            self.add_doc_id(url)
+                    if word in importantText:
+                        index_dict[word][self.doc_id] = (frequency, 1)
+                    else:
+                        index_dict[word][self.doc_id] = (frequency, 0)
+
+                # Keep record of doc id and url
+                self.add_doc_id(url)
+
+                # Add url to the traversed set
+                traversed.add(url)
 
             if self.doc_id % 100 == 0:
                 print(f'Looped through {self.doc_id} pages!')
@@ -134,12 +144,9 @@ class Indexer:
         index_dict.clear()
 
         # dumping doc id list
-        self.dump_doc_id(self.doc_id_list)
-        self.doc_id_list.clear()
+        self.file_handler.dump_json(self.doc_id_dict, './db/doc_id.json')
+        self.doc_id_dict.clear()
 
-    def dump_doc_id(self, doc_id_list):
-        temp_doc_id = ''.join(doc_id_list)
-        self.file_handler.write_doc_id(temp_doc_id)
 
     def calculate_tf_idf(self, file, outputfile, size):
         """
@@ -221,10 +228,6 @@ class Indexer:
         None
         """
 
-        # Update current status
-        last_ran_timestamp = datetime.now()
-        self.file_handler.set_index_status(False, last_ran_timestamp)
-
         tf_idf_index = open(file, 'r')
         final_index = open(outputfile, 'w')
 
@@ -251,13 +254,60 @@ class Indexer:
         tf_idf_index.close()
         final_index.close()
 
-        # Set index status to True
-        self.file_handler.set_index_status(True, last_ran_timestamp)
         self.file_handler.remove_tf_idf_indexes()
 
-if __name__ == '__main__':
-    indexer = Indexer('DEV', FileHandler(), file_count_offset=10000)
-    # indexer.index()
-    # indexer.index(restart=True)
-    d = indexer.calculate_tf_idf('test.txt', 'output.txt', 12)
-    print(d)
+    def get_fp_locations(self, index_file, fp_file):
+        """
+        Gets the file pointer location of each word's line in the index using
+        the tell function and writes it to a dict. This dict is then dumped
+        as a json.
+        Input Parameter:
+        index_file -> the outputfile from the normalize_tf_idf function (the
+        final index)
+        fp_file -> the file to store the result of the file pointer locations
+        Return Value:
+        None
+        """
+
+        # Update current status
+        last_ran_timestamp = datetime.now()
+        self.file_handler.set_index_status(False, last_ran_timestamp)
+
+        index = open(index_file, 'r')
+        fp_locations = open(fp_file, 'w')
+
+        # fp_dict is the dict that stores the file pointer locations.
+        # key: token, element: file pointer location int
+        fp_dict = dict()
+        count = 1
+
+        while True:
+            # check where the file pointer is at currently
+            fp = index.tell()
+
+            # then read the line
+            line = index.readline().strip('\n')
+
+            # end loop if the end of the file is reached
+            if line == '':
+                break
+
+            tup = eval(line)
+
+            # adds the file pointer location to fp_dict's token key
+            fp_dict[tup[0]] = fp
+
+            # keeptracks of the current status while running this function
+            count += 1
+            if count % 10000 == 0:
+                print(f"{count} words' file locations found!")
+
+        # dumps the dict as a json
+        print("Dumping the file pointer dict...")
+        self.file_handler.dump_json(fp_dict, fp_locations)
+
+        index.close()
+        fp_locations.close()
+
+        # Set index status to True
+        self.file_handler.set_index_status(True, last_ran_timestamp)
