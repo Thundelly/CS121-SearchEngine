@@ -156,6 +156,7 @@ class Indexer:
             if 'pi' in file:
                 files_to_be_merged.append(file)
         
+        files_to_be_merged.sort(reverse=True)
         current_temp = 0
 
         # Create two temp files
