@@ -15,7 +15,7 @@ class Indexer:
     def __init__(self, folder_name, file_handler, file_count_offset):
         # Download the nltk library before indexing.
         self.download_nltk_library()
-        self.doc_id_list = []
+        self.doc_id_dict = dict()
         self.doc_id = 1
         self.folder_name = folder_name
         self.file_handler = file_handler
@@ -73,12 +73,12 @@ class Indexer:
         Appends a new url to the doc_id_list and increments the doc_id
         If the list len is larger than ...., then call write_doc_id function
         """
-        self.doc_id_list.append(f'{self.doc_id}, {url}\n')
+        self.doc_id_dict[str(self.doc_id)] = url 
         self.doc_id += 1
 
-        if len(self.doc_id_list) > self.file_count_offset:
-            self.dump_doc_id(self.doc_id_list)
-            self.doc_id_list.clear()
+        # if len(self.doc_id_dict) > self.file_count_offset:
+        #     self.file_handler.write_doc_id(self.doc_id_dict)
+        #     self.doc_id_dict.clear()
 
     def compute_word_frequencies(self, token_list):
         frequencies = dict()
@@ -146,12 +146,9 @@ class Indexer:
         self.file_handler.set_index_status(True, last_ran_timestamp)
 
         # dumping doc id list
-        self.dump_doc_id(self.doc_id_list)
-        self.doc_id_list.clear()
-
-    def dump_doc_id(self, doc_id_list):
-        temp_doc_id = ''.join(doc_id_list)
-        self.file_handler.write_doc_id(temp_doc_id)
+        self.file_handler.write_doc_id(self.doc_id_dict)
+        self.doc_id_dict.clear()
+        
 
     def merge_indexes(self, file1, file2, outputfile):
         index1 = open(file1, 'r')
@@ -283,7 +280,7 @@ class Indexer:
         # returns the normalizers dict (we need this for the normalize function!)
         return tf_idf_normalizers
     
-    def normalize_tf_idf(file, outputfile, normalizer):
+    def normalize_tf_idf(self, file, outputfile, normalizer):
         """
         Normalizes tf_idf value by dividing the old tf_idf value with its lenght 
         (square root of all td-idf^2 scores) from calculate_tf_idf function.
@@ -322,9 +319,12 @@ class Indexer:
         tf_idf_index.close()
         final_index.close()
 
+        # def get_word(self, )
+
 if __name__ == '__main__':
-    indexer = Indexer('DEV', FileHandler(), file_count_offset=10000)
+    indexer = Indexer('DEV', FileHandler(), file_count_offset=10)
     # indexer.index()
-    # indexer.index(restart=True)
-    d = indexer.calculate_tf_idf('test.txt', 'output.txt', 12)
+    indexer.index(restart=True)
+    # d = indexer.calculate_tf_idf('test.txt', 'output.txt', 12)
+    # indexer.normalize_tf_idf('output.txt', 'final.txt', d)
     print(d)

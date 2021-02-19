@@ -51,12 +51,13 @@ class FileHandler:
 
         return (file_info['url'], text, ''.join(weighted))
 
-    def write_doc_id(self, doc_id_list):
+    def write_doc_id(self, doc_id_dict):
         """
         Writes doc_id_list to doc_id.txt 
         """
-        with open('./db/doc_id.txt', 'a') as f:
-            f.write(doc_id_list)
+        with open('./db/doc_id.json', 'wb') as f:
+            json_data = json.dumps(doc_id_dict)
+            f.write(json_data)
 
     def write_to_file(self, index_id, index_dict):
         with open(f'./db/pi{index_id}.txt', 'w') as file:
@@ -87,17 +88,6 @@ class FileHandler:
             status = json.loads(file.read())
 
         return status["Last Completed"]
-
-    def read_set(self, filename):
-        """
-        Read file line by line and return a set object 
-        """
-        with open(filename) as f: 
-            while True:
-                line = f.readline().strip('\n')
-                if line:
-                    break 
-                yield eval(line)
 
 if __name__ == '__main__':
     file_handler = FileHandler()
