@@ -232,7 +232,7 @@ class Indexer:
                 # If the words are exactly the same, add the indexes of
                 # both words and combine. Then add to the output_temp
                 if word1 == word2:
-                    temp_dict = self.merge_posting(eval(ine1)[1], eval(line2)[1])
+                    temp_dict = self.merge_posting(eval(line1)[1], eval(line2)[1])
                     output_temp.write(
                         str((word1, temp_dict)) + '\n')
                     line1 = file.readline().strip('\n')
