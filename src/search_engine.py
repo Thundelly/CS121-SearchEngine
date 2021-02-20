@@ -38,10 +38,10 @@ class SearchEngine:
             start_time, end_time, end_time-start_time))
 
     def search(self):
-        # query: string input from search
+        self.query.get_query()
+
         start_time = datetime.now()
 
-        query = self.query.get_query()
         self.query.process_query()
         self.query.get_result()
 
@@ -50,12 +50,9 @@ class SearchEngine:
         print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {}\n".format(
             start_time, end_time, end_time - start_time))
 
-        return query
-
     def run(self):
         while True:
-            if self.search() == ':q':
-                break
+            self.search()
 
 
 if __name__ == '__main__':

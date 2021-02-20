@@ -1,4 +1,5 @@
 import pprint
+import ast
 
 
 class Query:
@@ -8,7 +9,7 @@ class Query:
         self.final_index = open('./db/index.txt')
 
         self.indexer = indexer
-        self.query_tokens = None
+        self.query_tokens = dict()
         self.merged_posting = dict()
 
     def peek_posting(self, iterable):
@@ -44,24 +45,23 @@ class Query:
             else:
                 p1 = self.peek_posting(posting1_iter)
 
+        return intersection
+
     def get_query(self):
-        query = input("Please enter the query: ")
+        query = input("\nPlease enter the query: ")
         self.query_tokens = self.indexer.tokenize(query)
 
-        return query
-
     def process_query(self):
-        self.merged_posting.clear()
-
-        if self.query_tokens != None:
+        if self.query_tokens:
             for token in self.query_tokens:
                 try:
                     fp = self.fp_dict[token]
                     self.final_index.seek(fp)
-                    
+
                     # if the merged_posting is empty
                     if not self.merged_posting:
-                        self.merged_posting = eval(self.final_index.readline())[1]
+                        self.merged_posting = eval(
+                            self.final_index.readline())[1]
                     else:
                         self.merged_posting = self.get_intersecting_posting(
                             eval(self.final_index.readline())[1],
@@ -73,14 +73,20 @@ class Query:
 
     def get_result(self):
         if self.merged_posting:
-            sorted_tup = sorted(self.merged_posting.items(), key=lambda item: item[1], reverse=True)
+            sorted_tup = sorted(self.merged_posting.items(),
+                                key=lambda item: item[1], reverse=True)
+
+            print('\n\n===== Top 5 Results =====\n\n')
             for i in range(5):
                 try:
                     found_doc_id = sorted_tup[i][0]
-                    print(self.doc_id_dict[str(found_doc_id)])   # print the url of the found doc id
+                    # print the url of the found doc id
+                    print(self.doc_id_dict[str(found_doc_id)])
+
                 except IndexError:
                     break
+
+            self.merged_posting.clear()
+
         else:
             print('No results found')
-
-
