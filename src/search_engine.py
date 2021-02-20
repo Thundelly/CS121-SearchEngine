@@ -2,12 +2,13 @@ import os
 from indexer import Indexer
 from datetime import datetime
 from file_handler import FileHandler
-
+from query import Query
 
 class SearchEngine:
     def __init__(self):
         self.file_handler = FileHandler()
         self.indexer = Indexer(self.file_handler, file_count_offset=10000)
+        self.query = Query(self.file_handler, self.indexer)
 
         if not self.file_handler.get_index_status():
             self.index()
@@ -36,35 +37,13 @@ class SearchEngine:
         print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {}\n".format(
             start_time, end_time, end_time-start_time))
 
-    def search(self, query):
-        # query: string input from search
+    def search(self):
+        self.query.get_query()
+
         start_time = datetime.now()
 
-        tokens = self.indexer.tokenize(query)
-        scores = dict()
-        for token in tokens:
-            try:
-                fp = self.fp_dict[token]
-                self.final_index.seek(fp)
-                tup = eval(self.final_index.readline().strip('\n'))
-                for doc_id, score_tup in tup[1].items():
-                    if doc_id not in scores:
-                        scores[doc_id] = score_tup[0]
-                    else:
-                        scores[doc_id] += score_tup[0]
-            except KeyError:
-                print(f'No token {token} found.')
-
-        if scores:
-            sorted_tup = sorted(scores.items(), key=lambda item: item[1], reverse=True)
-            for i in range(5):
-                try:
-                    found_doc_id = sorted_tup[i][0]
-                    print(self.doc_id_dict[str(found_doc_id)])   # print the url of the found doc id
-                except IndexError:
-                    break
-        else:
-            print('No results found')
+        self.query.process_query()
+        self.query.get_result()
 
         end_time = datetime.now()
 
@@ -73,12 +52,7 @@ class SearchEngine:
 
     def run(self):
         while True:
-            s = input("What is your query?: ")
-    
-            if s == ':q':
-                break
-
-            self.search(s)
+            self.search()
 
 
 if __name__ == '__main__':
