@@ -12,7 +12,6 @@ from nltk.stem import SnowballStemmer
 
 from urllib.parse import urldefrag
 
-
 class Indexer:
     def __init__(self, file_handler, file_count_offset):
         # Download the nltk library before indexing.
@@ -146,6 +145,114 @@ class Indexer:
         # dumping doc id list
         self.file_handler.dump_json(self.doc_id_dict, './db/doc_id.json')
         self.doc_id_dict.clear()
+
+    def merge_indexes(self, folder_path):
+        files_to_be_merged = []
+
+        # For every partial index files in the folder,
+        # add to the list to be merged.
+        for file in self.file_handler.walk_files(folder_path, '.txt'):
+            if 'pi' in file:
+                files_to_be_merged.append(file)
+        
+        files_to_be_merged.sort(reverse=True)
+        current_temp = 0
+
+        # Create two temp files
+        try:
+            open('./db/temp0.txt', 'x')
+            open('./db/temp1.txt', 'x')
+        # If files already exist, clear the files
+        except FileExistsError:
+            self.file_handler.clear_merge_temp_files()
+
+        while files_to_be_merged:
+            print(f"{len(files_to_be_merged)} more files to merge!")
+
+            file = files_to_be_merged.pop()
+
+            # input_temp and output_temp will alternate between temp0 and temp.
+            if current_temp == 0:
+                file = open(file, 'r')
+                input_temp = open('./db/temp0.txt', 'r')
+                output_temp = open('./db/temp1.txt', 'w')
+
+            elif current_temp == 1:
+                file = open(file, 'r')
+                input_temp = open('./db/temp1.txt', 'r')
+                output_temp = open('./db/temp0.txt', 'w')
+
+            # Get each line
+            line1 = file.readline().strip('\n')
+            line2 = input_temp.readline().strip('\n')
+
+            while True:
+
+                # If the first file is empty, add the content of the
+                # second file to the output_temp
+                if line1 == '':
+                    while True:
+                        if line2 == '':
+                            break
+                        output_temp.write(line2 + '\n')
+                        line2 = input_temp.readline().strip('\n')
+                    break
+
+                # If the second file is empty, add the content of the
+                # first file to the output_temp
+                if line2 == '':
+                    while True:
+                        if line1 == '':
+                            break
+                        output_temp.write(line1 + '\n')
+                        line1 = file.readline().strip('\n')
+                    break
+
+                # If the files are not empty, get the first word
+                # in each files to be merged
+                word1 = eval(line1)[0]
+                word2 = eval(line2)[0]
+
+                # Check for lexicographical order and add
+                # the words that comes first to the output_temp
+                while word1 > word2:
+                    output_temp.write(line2 + '\n')
+                    line2 = input_temp.readline().strip('\n')
+                    if line2 == '':
+                        break
+                    word2 = eval(line2)[0]
+
+                while word2 > word1:
+                    output_temp.write(line1 + '\n')
+                    line1 = file.readline().strip('\n')
+                    if line1 == '':
+                        break
+                    word1 = eval(line1)[0]
+
+                # If the words are exactly the same, add the indexes of
+                # both words and combine. Then add to the output_temp
+                if word1 == word2:
+                    temp_dict = self.merge_posting(eval(line1)[1], eval(line2)[1])
+                    output_temp.write(
+                        str((word1, temp_dict)) + '\n')
+                    line1 = file.readline().strip('\n')
+                    line2 = input_temp.readline().strip('\n')
+
+            file.close()
+            input_temp.close()
+            output_temp.close()
+
+            # Alternate between the temp files
+            if current_temp == 0:
+                current_temp = 1
+            else:
+                current_temp = 0
+
+        # Last merged file will be the final index
+        # and remove the temp files
+        self.file_handler.remove_merge_temp_files(current_temp)
+        self.file_handler.remove_partial_indexes()
+        print("Index merge complete.")
 
 
     def calculate_tf_idf(self, file, outputfile, size):
@@ -311,3 +418,51 @@ class Indexer:
 
         # Set index status to True
         self.file_handler.set_index_status(True, last_ran_timestamp)
+
+    def merge_posting(self, posting1, posting2):
+        d = {k : v for k, v in sorted({** posting1, **posting2}.items())}
+        return d
+        
+    def peek_posting(self, iterable):
+        try:
+            next_iter = next(iterable)
+
+        except StopIteration:
+            return None
+
+        return next_iter
+
+    def get_intersecting_posting(self, posting1, posting2):
+        posting1 = eval(posting1)[1]
+        posting1_iter = iter(posting1)
+        posting2 = eval(posting2)[1]
+        posting2_iter = iter(posting2)
+        intersection = dict()
+
+        p1 = self.peek_posting(posting1_iter)
+        p2 = self.peek_posting(posting2_iter)
+
+        while p1 != None and p2 != None:
+            if p1 == p2:
+                score1 = posting1[p1]
+                score2 = posting2[p2]
+                intersection[p1] = (score1[0] + score2[0],
+                                    1 if score1[1] == 1 or score2[1] == 1 else 0)
+
+                p1 = self.peek_posting(posting1_iter)
+                p2 = self.peek_posting(posting2_iter)
+
+            elif p1 > p2:
+                p2 = self.peek_posting(posting2_iter)
+
+            else:
+                p1 = self.peek_posting(posting1_iter)
+
+        
+
+
+if __name__ == '__main__':
+    test = Indexer(FileHandler(), file_count_offset=10000)
+    line1 = {14300: (1, 0), 14435: (1, 0), 14447: (4, 1), 14462: (8, 1), 14572: (1, 0), 14609: (1, 0), 14793: (1, 0), 14828: (46, 1), 14860: (1, 0), 14865: (2, 0), 14893: (3, 0)}
+    line2 = {14301: (1, 0)}
+    test.merge_posting(line1, line2)

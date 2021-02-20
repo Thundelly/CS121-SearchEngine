@@ -22,7 +22,7 @@ class SearchEngine:
         # Index the webpages into partial indexes
         self.indexer.index('./DEV', restart=True)
         # Merge partial indexes to one single index
-        self.file_handler.merge_indexes('./db')
+        self.indexer.merge_indexes('./db')
         # Calculate the tf_idf scores for each index
         normalizer = self.indexer.calculate_tf_idf(
             './db/index.txt', './db/index_tf_idf.txt', self.file_handler.count_number_of_line('./db/index.txt'))

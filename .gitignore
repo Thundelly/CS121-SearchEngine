@@ -4,3 +4,5 @@ nltk_data
 *.txt
 *.pdf
 *.zip
+
+indexer_test.py
