@@ -50,7 +50,7 @@ class Indexer:
             # Download stopwords from nltk library.
             nltk.download('stopwords', download_dir='./nltk_data/')
 
-    def tokenize(self, text):
+    def tokenize(self, text, single_token=False):
         """
         Takes a string of text and tokenize it using NLTK library.
         """
@@ -59,8 +59,11 @@ class Indexer:
         re_tokens = re_tokenizer.tokenize(text.lower())
 
         stemmer = SnowballStemmer(language='english')
-        tokens = [stemmer.stem(token)
-                  for token in re_tokens if len(token) != 1]
+        if not single_token:
+            tokens = [stemmer.stem(token)
+                      for token in re_tokens if len(token) != 1]
+        else:
+            tokens = [stemmer.stem(token) for token in re_tokens]
 
         return tokens
 
@@ -104,8 +107,8 @@ class Indexer:
 
             # don't count if we already traversed the url (defragged)
             if url not in traversed:
-                normalText = self.tokenize(normalText)
-                importantText = set(self.tokenize(importantText))
+                normalText = self.tokenize(normalText, single_token=False)
+                importantText = set(self.tokenize(importantText, single_token=False))
 
                 # Find frequencies of each word
                 frequencies = self.compute_word_frequencies(normalText)

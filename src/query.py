@@ -45,9 +45,9 @@ class Query:
 
         return intersection
 
-    def get_query(self):
-        query = input("\nPlease enter the query: ")
-        self.query_tokens = self.indexer.tokenize(query)
+    def get_query(self, query):
+        # query = input("\nPlease enter the query: ")
+        self.query_tokens = self.indexer.tokenize(query, single_token=True)
 
     def process_query(self):
         if self.query_tokens:
@@ -70,21 +70,32 @@ class Query:
                     print(f'No token {token} found.')
 
     def get_result(self):
+        result = {}
+
         if self.merged_posting:
             sorted_tup = sorted(self.merged_posting.items(),
                                 key=lambda item: item[1], reverse=True)
 
-            print('\n\n===== Top 5 Results =====\n\n')
             for i in range(5):
                 try:
                     found_doc_id = sorted_tup[i][0]
-                    # print the url of the found doc id
-                    print(self.doc_id_dict[str(found_doc_id)])
+                    # Add the found URL
+                    result[str(i)] = (self.doc_id_dict[str(found_doc_id)])
 
                 except IndexError:
                     break
 
+                except TypeError:
+                    break
+
             self.merged_posting.clear()
+            result['error_status'] = False
+            result['error_message'] = ''
+
+            return result
 
         else:
-            print('No results found')
+            result['error_status'] = True
+            result['error_message'] = 'No results found.'
+
+            return result

@@ -1,5 +1,7 @@
-from indexer import Indexer
 from datetime import datetime
+from typing import Type
+
+from indexer import Indexer
 from file_handler import FileHandler
 from query import Query
 
@@ -17,10 +19,6 @@ class SearchEngine:
 
         if not self.file_handler.get_index_status():
             self.index()
-
-        self.fp_dict = self.file_handler.load_json('./db/fp_locations.json')
-        self.doc_id_dict = self.file_handler.load_json('./db/doc_id.json')
-        self.final_index = open('./db/index.txt')
 
     def index(self):
         start_time = datetime.now()
@@ -40,26 +38,37 @@ class SearchEngine:
             './db/index.txt', './db/fp_locations.json')
 
         end_time = datetime.now()
+        process_time = end_time - start_time
 
         print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {}\n".format(
-            start_time, end_time, end_time-start_time))
+            start_time, end_time, process_time))
 
-    def search(self):
-        self.query.get_query()
+    def search(self, query):
+        self.query.get_query(query)
 
         start_time = datetime.now()
 
         self.query.process_query()
-        self.query.get_result()
+        result = self.query.get_result()
 
         end_time = datetime.now()
+        process_time = end_time - start_time
 
         print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {}\n".format(
-            start_time, end_time, end_time - start_time))
+            start_time, end_time, process_time))
+
+        # Add the process time to query result, in milliseconds
+        try:
+            result['process_time'] = process_time.microseconds / 1000
+
+        except TypeError:
+            pass
+
+        return result
 
     def run(self):
-        while True:
-            self.search()
+        query = input("Please enter your query:")
+        self.search(query)
 
 
 if __name__ == '__main__':
