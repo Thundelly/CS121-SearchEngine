@@ -1,4 +1,3 @@
-import os
 from indexer import Indexer
 from datetime import datetime
 from file_handler import FileHandler

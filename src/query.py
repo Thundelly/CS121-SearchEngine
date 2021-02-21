@@ -1,5 +1,3 @@
-import pprint
-import ast
 
 
 class Query:
