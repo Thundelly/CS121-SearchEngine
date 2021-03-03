@@ -48,7 +48,7 @@ class FileHandler:
 
     # def write_doc_id(self, doc_id_dict):
     #     """
-    #     Writes doc_id_list to doc_id.txt 
+    #     Writes doc_id_list to doc_id.txt
     #     """
     #     with open('./db/doc_id.json', 'wb') as f:
     #         json.dump(doc_id_dict, f)
@@ -122,7 +122,6 @@ class FileHandler:
         except TypeError:
             json.dump(dict, filename)
 
-
     def load_json(self, filename):
-        with open(filename, 'r') as f:
+        with open(filename, 'w+') as f:
             return json.load(f)
