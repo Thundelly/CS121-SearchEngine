@@ -71,7 +71,7 @@ class FileHandler:
 
     def get_index_status(self):
 
-        with open('index_status.log', 'r') as log:
+        with open('index_status.log', 'w+') as log:
             status = log.readline()[10:].strip('\n')
 
             if status == 'True':
