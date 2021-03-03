@@ -1,10 +1,15 @@
-import os
 from indexer import Indexer
 from datetime import datetime
 from file_handler import FileHandler
 from query import Query
 
+
 class SearchEngine:
+    """
+    If need to reindex, please change the 
+    status to False in "index_status.log" file
+    """
+
     def __init__(self):
         self.file_handler = FileHandler()
         self.indexer = Indexer(self.file_handler, file_count_offset=10000)
@@ -28,9 +33,11 @@ class SearchEngine:
         normalizer = self.indexer.calculate_tf_idf(
             './db/index.txt', './db/index_tf_idf.txt', self.file_handler.count_number_of_line('./db/index.txt'))
         # Normalize the tf_idf scores
-        self.indexer.normalize_tf_idf('./db/index_tf_idf.txt', './db/index.txt', normalizer)
+        self.indexer.normalize_tf_idf(
+            './db/index_tf_idf.txt', './db/index.txt', normalizer)
         # Get file pointer locations for each index
-        self.indexer.get_fp_locations('./db/index.txt', './db/fp_locations.json')
+        self.indexer.get_fp_locations(
+            './db/index.txt', './db/fp_locations.json')
 
         end_time = datetime.now()
 
@@ -58,4 +65,3 @@ class SearchEngine:
 if __name__ == '__main__':
     search_engine = SearchEngine()
     search_engine.run()
-
