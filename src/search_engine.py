@@ -22,6 +22,7 @@ class SearchEngine:
         self.final_index = open('./db/index.txt')
 
         self.query = Query(self.file_handler, self.indexer)
+        
 
     def index(self):
         start_time = datetime.now()

@@ -9,6 +9,11 @@ class FileHandler:
         if not os.path.exists('./db'):
             os.mkdir('./db')
 
+        if not os.path.isfile('./db/fp_locations.json'):
+            open('./db/fp_locations.json', 'a').close()
+        if not os.path.isfile('./index_status.log'):
+            open('./index_status.log', 'w').close()
+ 
     def walk_files(self, folder, file_extension=None):
         """
         Walks through directories and files.
@@ -71,7 +76,7 @@ class FileHandler:
 
     def get_index_status(self):
 
-        with open('index_status.log', 'w+') as log:
+        with open('index_status.log', 'r') as log:
             status = log.readline()[10:].strip('\n')
 
             if status == 'True':
@@ -123,5 +128,5 @@ class FileHandler:
             json.dump(dict, filename)
 
     def load_json(self, filename):
-        with open(filename, 'w+') as f:
+        with open(filename, 'r') as f:
             return json.load(f)
