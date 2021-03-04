@@ -12,7 +12,6 @@ from nltk.stem import SnowballStemmer
 
 from urllib.parse import urldefrag
 
-
 class Indexer:
     def __init__(self, file_handler, file_count_offset):
         # Download the nltk library before indexing.
@@ -22,10 +21,6 @@ class Indexer:
         self.file_handler = file_handler
 
         self.file_count_offset = file_count_offset
-
-    def populate_index_list(self, index_list):
-        for i in range(0, 27):
-            index_list.append([])
 
     def set_up_ssl(self):
         """
@@ -72,14 +67,14 @@ class Indexer:
     def add_doc_id(self, url):
         """
         Appends a new url to the doc_id_list and increments the doc_id
-        If the list len is larger than ...., then call dump json
+        If the list len is larger than ...., then call write_doc_id function
         """
-        self.doc_id_dict[self.doc_id] = url
+        self.doc_id_dict[str(self.doc_id)] = url 
         self.doc_id += 1
 
-        # if len(self.doc_id_dict) > self.file_count_offset:
-        #     self.file_handler.write_doc_id(self.doc_id_dict)
-        #     self.doc_id_dict.clear()
+        # if len(self.doc_id_list) > self.file_count_offset:
+        #     self.dump_doc_id(self.doc_id_list)
+        #     self.doc_id_list.clear()
 
     def compute_word_frequencies(self, token_list):
         frequencies = dict()
@@ -98,35 +93,37 @@ class Indexer:
         if restart:
             self.file_handler.clear_files()
 
-        # Update current status
-        last_ran_timestamp = datetime.now()
-        self.file_handler.set_index_status(False, last_ran_timestamp)
-
         index_id = 0
         index_dict = dict()
         traversed = set()
 
         for file in self.file_handler.walk_files(folder_name, '.json'):
-            url, normalText, importantText = self.file_handler.parse_file(file)
+            url, normalText, important1, important2, important3 = self.file_handler.parse_file(file)
 
             url = urldefrag(url)[0]
 
             # don't count if we already traversed the url (defragged)
             if url not in traversed:
                 normalText = self.tokenize(normalText)
-                importantText = set(self.tokenize(importantText))
+                important1 = set(self.tokenize(important1))
+                important2 = set(self.tokenize(important2))
+                important3 = set(self.tokenize(important3))
 
                 # Find frequencies of each word
                 frequencies = self.compute_word_frequencies(normalText)
 
                 for word, frequency in frequencies.items():
+                    importance = 0
                     if word not in index_dict:
                         index_dict[word] = dict()
+                    if word in important1:
+                        importance += 1
+                    if word in important2:
+                        importance += 2
+                    if word in important3:
+                        importance += 3
 
-                    if word in importantText:
-                        index_dict[word][self.doc_id] = (frequency, 1)
-                    else:
-                        index_dict[word][self.doc_id] = (frequency, 0)
+                    index_dict[word][self.doc_id] = (frequency, importance)
 
                 # Keep record of doc id and url
                 self.add_doc_id(url)
@@ -134,29 +131,25 @@ class Indexer:
                 # Add url to the traversed set
                 traversed.add(url)
 
-                if self.doc_id % 100 == 0:
-                    print(f'Looped through {self.doc_id} pages!')
+            if self.doc_id % 100 == 0:
+                print(f'Looped through {self.doc_id} pages!')
 
-                # Offload every 10,000 pages
-                if self.doc_id % self.file_count_offset == 0:
-                    print(
-                        f'Looped through {self.doc_id} pages. Offloading to pi{index_id}')
-                    self.file_handler.write_to_file(index_id, index_dict)
-                    index_dict.clear()
-                    index_id += 1
-                    print('Done with offloading, continuing.')
+            # Offload every 10,000 pages
+            if self.doc_id % self.file_count_offset == 0:
+                print(
+                    f'Looped through {self.doc_id} pages. Offloading to pi{index_id}')
+                self.file_handler.write_to_file(index_id, index_dict)
+                index_dict.clear()
+                index_id += 1
+                print('Done with offloading, continuing.')
 
         # Final offload
         print(f'Looped through every page. Offloading to pi{index_id}')
         self.file_handler.write_to_file(index_id, index_dict)
         index_dict.clear()
 
-        # Set index status to True
-        self.file_handler.set_index_status(True, last_ran_timestamp)
-
         # dumping doc id list
-        with open('./db/doc_id.json', 'w') as doc_id_file:
-            self.file_handler.json_dump(self.doc_id_dict, doc_id_file)
+        self.file_handler.dump_json(self.doc_id_dict, './db/doc_id.json')
         self.doc_id_dict.clear()
 
     def merge_indexes(self, folder_path):
@@ -167,9 +160,10 @@ class Indexer:
         for file in self.file_handler.walk_files(folder_path, '.txt'):
             if 'pi' in file:
                 files_to_be_merged.append(file)
-
-        current_temp = 0
         
+        files_to_be_merged.sort(reverse=True)
+        current_temp = 0
+
         # Create two temp files
         try:
             open('./db/temp0.txt', 'x')
@@ -188,19 +182,19 @@ class Indexer:
                 file = open(file, 'r')
                 input_temp = open('./db/temp0.txt', 'r')
                 output_temp = open('./db/temp1.txt', 'w')
-                
+
             elif current_temp == 1:
                 file = open(file, 'r')
                 input_temp = open('./db/temp1.txt', 'r')
                 output_temp = open('./db/temp0.txt', 'w')
-            
+
             # Get each line
             line1 = file.readline().strip('\n')
             line2 = input_temp.readline().strip('\n')
 
             while True:
 
-                # If the first file is empty, add the content of the 
+                # If the first file is empty, add the content of the
                 # second file to the output_temp
                 if line1 == '':
                     while True:
@@ -241,11 +235,12 @@ class Indexer:
                         break
                     word1 = eval(line1)[0]
 
-                # If the words are exactly the same, add the indexes of 
+                # If the words are exactly the same, add the indexes of
                 # both words and combine. Then add to the output_temp
                 if word1 == word2:
+                    temp_dict = self.merge_posting(eval(line1)[1], eval(line2)[1])
                     output_temp.write(
-                        str((word1, {**eval(line1)[1], **eval(line2)[1]})) + '\n')
+                        str((word1, temp_dict)) + '\n')
                     line1 = file.readline().strip('\n')
                     line2 = input_temp.readline().strip('\n')
 
@@ -262,87 +257,82 @@ class Indexer:
         # Last merged file will be the final index
         # and remove the temp files
         self.file_handler.remove_merge_temp_files(current_temp)
+        self.file_handler.remove_partial_indexes()
         print("Index merge complete.")
+
 
     def calculate_tf_idf(self, file, outputfile, size):
         """
-        Calculates tf_idf score by multiplying the term frequency (tf)
-        and inverse document frequency (idf). Stores the result 
+        Calculates tf-idf lnc score. Stores the result
         in the outputfile.
 
-        idf score has the following formula:
-        log(1 + n / (1 + d(t))) + 1
+        Gets 1 + ln(term frequency)
+        Does not calculate idf (that is done with queries using ltc)
 
-        Input Parameter: 
+        Input Parameter:
         file -> the inverted index file
         outputfile -> the file to store the tf_idf values
         size -> the number of files in corpus
 
-        Return Value: 
-        A normalized dictionary contains doc_id and 
+        Return Value:
+        A normalized dictionary contains doc_id and
         its lenght (square root of all td-idf^2 scores)
         """
-        
+
         inverted_index = open(file, 'r')
         tf_idf_index = open(outputfile, 'w')
-        
-        tf_idf_normalizers = dict()
+
+        normalizers = dict()
         temp_dict = dict()
         count = 1
 
         for line in inverted_index:
-            # gets the tuple item from inverted index file 
+            # gets the tuple item from inverted index file
             tup = eval(line.strip('\n'))
-            
-            # gets the number of documents in the corpus that contain the word
-            # uses it to calculate idf value 
-            doc_freq = len(tup[1])
-            idf_value = math.log((size + 1) / (doc_freq + 1)) + 1
-    
-            # stores the tf_idf value into the temp dictionary 
-            # and add (tf_idf)^2 to the tf_idf_normalizers 
+
             for doc_id, tf_value in tup[1].items():
-                tf_idf = tf_value[0] * idf_value
-                temp_dict[doc_id] = (tf_idf, tf_value[1])
+                lnc_value = 1 + math.log(tf_value[0])
+                temp_dict[doc_id] = (lnc_value, tf_value[1])
 
-                if doc_id not in tf_idf_normalizers:
-                    tf_idf_normalizers[doc_id] = tf_idf * tf_idf
+                if doc_id not in normalizers:
+                    normalizers[doc_id] = lnc_value * lnc_value
                 else:
-                    tf_idf_normalizers[doc_id] += (tf_idf * tf_idf)
+                    normalizers[doc_id] += (lnc_value * lnc_value)
 
-            # writes the tf_idf value to the output file and
+            # writes the lnc value to the output file and
             # clears temp_dict for the next loop (next line)
             tf_idf_index.write(str((tup[0], temp_dict)) + '\n')
             temp_dict.clear()
 
-            # keeptracks of the current status while running this function
+            # keeps track of the current status while running this function
             count += 1
-            if count % 10000 == 0:
+            if count % 1000 == 0:
                 print(f'{count} words calculated!')
 
         inverted_index.close()
         tf_idf_index.close()
 
         # square roots all of the values of normalizers
-        for doc_id in tf_idf_normalizers.keys():
-            tf_idf_normalizers[doc_id] = math.sqrt(tf_idf_normalizers[doc_id])
+        for doc_id in normalizers.keys():
+            normalizers[doc_id] = math.sqrt(normalizers[doc_id])
 
         # returns the normalizers dict (we need this for the normalize function!)
-        return tf_idf_normalizers
+        return normalizers
     
     def normalize_tf_idf(self, file, outputfile, normalizer):
         """
-        Normalizes tf_idf value by dividing the old tf_idf value with its lenght 
+        Normalizes tf_idf value by dividing the old tf_idf value with its lenght
         (square root of all td-idf^2 scores) from calculate_tf_idf function.
 
         Input Parameter:
-        file -> the outputfile from the calculate_tf_idf function 
-        outputfile -> the file to store the result of the normalized tf_idf value  
-        normalizer -> the returned dictionary from the calculate_if_idf function 
+        file -> the outputfile from the calculate_tf_idf function
+        outputfile -> the file to store the result of the normalized tf_idf value
+        normalizer -> the returned dictionary from the calculate_if_idf function
 
-        Return Value: 
+        Return Value:
         None
         """
+
         tf_idf_index = open(file, 'r')
         final_index = open(outputfile, 'w')
 
@@ -363,26 +353,31 @@ class Indexer:
 
             # keeptracks of the current status while running this function
             count += 1
-            if count % 10000 == 0:
+            if count % 1000 == 0:
                 print(f'{count} words normalized!')
 
         tf_idf_index.close()
         final_index.close()
+
+        self.file_handler.remove_tf_idf_indexes()
 
     def get_fp_locations(self, index_file, fp_file):
         """
         Gets the file pointer location of each word's line in the index using
         the tell function and writes it to a dict. This dict is then dumped
         as a json.
-
         Input Parameter:
         index_file -> the outputfile from the normalize_tf_idf function (the
         final index)
         fp_file -> the file to store the result of the file pointer locations
-
         Return Value:
         None
         """
+
+        # Update current status
+        last_ran_timestamp = datetime.now()
+        self.file_handler.set_index_status(False, last_ran_timestamp)
+
         index = open(index_file, 'r')
         fp_locations = open(fp_file, 'w')
 
@@ -414,16 +409,21 @@ class Indexer:
 
         # dumps the dict as a json
         print("Dumping the file pointer dict...")
-        self.file_handler.json_dump(fp_dict, fp_locations)
+        self.file_handler.dump_json(fp_dict, fp_locations)
 
         index.close()
         fp_locations.close()
 
+        # Set index status to True
+        self.file_handler.set_index_status(True, last_ran_timestamp)
+
+    def merge_posting(self, posting1, posting2):
+        d = {k : v for k, v in sorted({** posting1, **posting2}.items())}
+        return d
 
 
 if __name__ == '__main__':
-    indexer = Indexer('DEV', FileHandler(), file_count_offset=10000)
-    # indexer.index()
-    # indexer.index(restart=True)
-    d = indexer.calculate_tf_idf('test.txt', 'output.txt', 12)
-    print(d)
+    test = Indexer(FileHandler(), file_count_offset=10000)
+    line1 = {14300: (1, 0), 14435: (1, 0), 14447: (4, 1), 14462: (8, 1), 14572: (1, 0), 14609: (1, 0), 14793: (1, 0), 14828: (46, 1), 14860: (1, 0), 14865: (2, 0), 14893: (3, 0)}
+    line2 = {14301: (1, 0)}
+    test.merge_posting(line1, line2)

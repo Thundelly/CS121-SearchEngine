@@ -1,14 +1,7 @@
 import os
 from bs4 import BeautifulSoup
-from datetime import datetime
 
-try:
-    import orjson as json
-except ImportError:
-    try:
-        import ujson as json
-    except ImportError:
-        import json
+import json
 
 
 class FileHandler:
@@ -16,6 +9,11 @@ class FileHandler:
         if not os.path.exists('./db'):
             os.mkdir('./db')
 
+        if not os.path.isfile('./db/fp_locations.json'):
+            open('./db/fp_locations.json', 'a').close()
+        if not os.path.isfile('./index_status.log'):
+            open('./index_status.log', 'w').close()
+ 
     def walk_files(self, folder, file_extension=None):
         """
         Walks through directories and files.
@@ -37,7 +35,7 @@ class FileHandler:
         """
         # opens json file and uses orjson to load the file
         with open(filename, 'r') as f:
-            file_info = json.loads(f.read())
+            file_info = json.load(f)
 
             # parses the content of the file useing BeautifulSoup
             # uses lxml for better perfomance
@@ -47,11 +45,24 @@ class FileHandler:
             text = soup.text
 
             # find all the important text from the specified tags
-            weighted = []
-            for s in soup.find_all(['b', 'strong', 'h1', 'h2', 'h3', 'title']):
-                weighted.append(s.getText().strip() + ' ')
+            weighted1 = ''
+            weighted2 = ''
+            weighted3 = ''
+            for s in soup.find_all(['b', 'strong']):
+                weighted1 += s.getText().strip() + ' '
+            for s in soup.find_all(['h1', 'h2', 'h3']):
+                weighted2 += s.getText().strip() + ' '
+            for s in soup.find_all(['title']):
+                weighted3 += s.getText().strip() + ' '
 
-        return (file_info['url'], text, ''.join(weighted))
+        return (file_info['url'], text, weighted1, weighted2, weighted3)
+
+    # def write_doc_id(self, doc_id_dict):
+    #     """
+    #     Writes doc_id_list to doc_id.txt
+    #     """
+    #     with open('./db/doc_id.json', 'wb') as f:
+    #         json.dump(doc_id_dict, f)
 
     def write_to_file(self, index_id, index_dict):
         with open(f'./db/pi{index_id}.txt', 'w') as file:
@@ -63,10 +74,6 @@ class FileHandler:
         for file in self.walk_files('db'):
             with open(file, 'r+') as file:
                 file.truncate(0)
-
-        # print("CLEARING DOC ID FILE")
-        with open('./db/doc_id.txt', 'w+') as file:
-            file.truncate(0)
 
     def set_index_status(self, completed, timestamp):
 
@@ -96,17 +103,36 @@ class FileHandler:
             temp0.truncate(0)
             temp1.truncate(0)
 
-    def json_dump(self, d, filename):
-        """
-        Dumps dict d to a file
-        """
-        json.dump(d, filename)
+    def remove_partial_indexes(self):
+        for file in self.walk_files('./db', '.txt'):
+            if 'pi' in file:
+                os.remove(file)
 
-    def json_load(self, filename):
+    def remove_tf_idf_indexes(self):
+        for file in self.walk_files('./db', '.txt'):
+            if 'tf_idf' in file:
+                os.remove(file)
+
+    def count_number_of_line(self, filename):
+        count = 0
+
+        with open(filename, 'r') as file:
+            for line in file:
+                count += 1
+
+        return count
+
+    def dump_json(self, dict, filename):
+        """
+        Dumps dictionary dict to a file
+        """
+        try:
+            with open(filename, 'w') as f:
+                json.dump(dict, f)
+
+        except TypeError:
+            json.dump(dict, filename)
+
+    def load_json(self, filename):
         with open(filename, 'r') as f:
             return json.load(f)
-
-
-if __name__ == '__main__':
-    file_handler = FileHandler()
-    file_handler.clear_files()
