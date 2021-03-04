@@ -1,4 +1,5 @@
 import math
+import re
 
 class Query:
     def __init__(self, file_handler, indexer):
@@ -33,7 +34,7 @@ class Query:
                 try:
                     fp = self.fp_dict[token]
                     self.final_index.seek(fp)
-                    token_posting = eval(self.final_index.readline())[1]
+                    token_posting = Query.fast_eval(self.final_index.readline())[1]
 
                     for doc_id, score in token_posting.items():
                         if doc_id not in document_term_scores:
@@ -58,13 +59,14 @@ class Query:
                         final_score += term_scores[token][1]
                     except KeyError:
                         pass
-                self.posting[doc_id] = (final_score)
-
+                # len(term_scores) is how many query terms appear in the doc
+                self.posting[doc_id] = (final_score, len(term_scores))
 
     def get_result(self):
         if self.posting:
+            # prioritize docs containing the most query terms, then prioritize importance, then cosine similarity
             sorted_tup = sorted(self.posting.items(),
-                                key=lambda item: item[1], reverse=True)
+                                key=lambda item: (item[1][1], item[1][0]), reverse=True)
 
             print('\n\n===== Top 10 Results =====\n\n')
             for i in range(10):
@@ -80,3 +82,14 @@ class Query:
 
         else:
             print('No results found')
+
+    @staticmethod
+    def fast_eval(line):
+        new_str = re.sub("'|,|{|:|}|\(|\)", "", line.strip())
+        str_list = new_str.split()
+        token = str_list[0]
+        scores_dict = dict()
+        for i in range(1, len(str_list), 3):
+            scores_dict[int(str_list[i])] = (float(str_list[i + 1]), int(str_list[i + 2]))
+
+        return (token, scores_dict)
