@@ -15,24 +15,30 @@ class SearchEngine:
     """
 
     def __init__(self):
+        # Make an instance of file handler
         self.file_handler = FileHandler()
+        # Make an instance of indexer
         self.indexer = Indexer(self.file_handler, file_count_offset=10000)
 
+        # Check if the indexing is completed. If not, index the documents
         if not self.file_handler.get_index_status():
             self.index()
 
+        # Open files 
         self.fp_dict = self.file_handler.load_json('./db/fp_locations.json')
         self.doc_id_dict = self.file_handler.load_json('./db/doc_id.json')
         self.final_index = open('./db/index.txt')
 
         cached_words = self.cache_stop_words()
-
+        # Cached words are added to the query instance to check during query time
         self.query = Query(self.file_handler, self.indexer, cached_words)
+
 
     def cache_stop_words(self):
         cached_words = {}
         stop_words = set(stopwords.words('english'))
 
+        # For every index, cache the stop words
         for line in self.final_index:
             index = Query.fast_eval(line)
 
@@ -68,9 +74,11 @@ class SearchEngine:
     def search(self, query):
         start_time = datetime.now()
 
+        # Gets query from the user
         self.query.get_query(query)
-
+        # Process the query
         self.query.process_query()
+        # Get result of the query
         result = self.query.get_result()
 
         end_time = datetime.now()
@@ -88,11 +96,6 @@ class SearchEngine:
 
         return result
 
-    def run(self):
-        query = input("Please enter your query:")
-        self.search(query)
-
 
 if __name__ == '__main__':
     search_engine = SearchEngine()
-    search_engine.run()
