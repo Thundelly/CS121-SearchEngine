@@ -5,6 +5,8 @@ from indexer import Indexer
 from file_handler import FileHandler
 from query import Query
 
+from nltk.corpus import stopwords
+
 
 class SearchEngine:
     """
@@ -23,8 +25,22 @@ class SearchEngine:
         self.doc_id_dict = self.file_handler.load_json('./db/doc_id.json')
         self.final_index = open('./db/index.txt')
 
-        self.query = Query(self.file_handler, self.indexer)
-        
+        cached_words = self.cache_stop_words()
+
+        self.query = Query(self.file_handler, self.indexer, cached_words)
+
+    def cache_stop_words(self):
+        cached_words = {}
+        stop_words = set(stopwords.words('english'))
+
+        for line in self.final_index:
+            index = Query.fast_eval(line)
+
+            if index[0] in stop_words:
+                cached_words[index[0]] = index[1]
+
+        return cached_words
+
 
     def index(self):
         start_time = datetime.now()
@@ -50,9 +66,9 @@ class SearchEngine:
             start_time, end_time, process_time))
 
     def search(self, query):
-        self.query.get_query(query)
-
         start_time = datetime.now()
+
+        self.query.get_query(query)
 
         self.query.process_query()
         result = self.query.get_result()
@@ -65,7 +81,7 @@ class SearchEngine:
 
         # Add the process time to query result, in milliseconds
         try:
-            result['process_time'] = process_time.microseconds / 1000
+            result['process_time'] = process_time.total_seconds() * 1000
 
         except TypeError:
             pass
