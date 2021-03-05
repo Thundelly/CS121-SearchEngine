@@ -22,9 +22,9 @@ class Query:
         self.query_tokens = self.indexer.tokenize(query)
 
         # Removes stop words if it is less than 80% of the query
-        filtered_tokens = [t for t in self.query_tokens if t not in self.stop_words]
-        if len(filtered_tokens) > len(self.query_tokens) * .2:
-            self.query_tokens = filtered_tokens
+        # filtered_tokens = [t for t in self.query_tokens if t not in self.stop_words]
+        # if len(filtered_tokens) > len(self.query_tokens) * .2:
+        #     self.query_tokens = filtered_tokens
         # print(self.query_tokens)
 
     def process_query(self):
