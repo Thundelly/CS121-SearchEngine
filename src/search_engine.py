@@ -15,10 +15,16 @@ class SearchEngine:
     def __init__(self):
         self.file_handler = FileHandler()
         self.indexer = Indexer(self.file_handler, file_count_offset=10000)
-        self.query = Query(self.file_handler, self.indexer)
 
         if not self.file_handler.get_index_status():
             self.index()
+
+        self.fp_dict = self.file_handler.load_json('./db/fp_locations.json')
+        self.doc_id_dict = self.file_handler.load_json('./db/doc_id.json')
+        self.final_index = open('./db/index.txt')
+
+        self.query = Query(self.file_handler, self.indexer)
+        
 
     def index(self):
         start_time = datetime.now()

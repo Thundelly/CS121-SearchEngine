@@ -9,7 +9,12 @@ class FileHandler:
         if not os.path.exists('./db'):
             os.mkdir('./db')
 
-    def walk_files(self, folder, file_extension=None):
+        if not os.path.isfile('./db/fp_locations.json'):
+            open('./db/fp_locations.json', 'a').close()
+        if not os.path.isfile('./index_status.log'):
+            open('./index_status.log', 'w').close()
+ 
+    def walk_files(self, folder: str, file_extension=None) -> None:
         """
         Walks through directories and files.
         Checks if files are json files. 
@@ -23,7 +28,7 @@ class FileHandler:
                 else:
                     yield path + '/' + filename
 
-    def parse_file(self, filename):
+    def parse_file(self, filename: str) -> ({}, str, str, str, str):
         """
         Truns json file into str text. 
         Returns both regular text and important text.
@@ -40,25 +45,34 @@ class FileHandler:
             text = soup.text
 
             # find all the important text from the specified tags
-            weighted = []
-            for s in soup.find_all(['b', 'strong', 'h1', 'h2', 'h3', 'title']):
-                weighted.append(s.getText().strip() + ' ')
+            weighted1 = ''
+            weighted2 = ''
+            weighted3 = ''
 
-        return (file_info['url'], text, ''.join(weighted))
+            # weighted1 is bold/strong. weighted2 are headers. weighted3 is the
+            # title.
+            for s in soup.find_all(['b', 'strong']):
+                weighted1 += s.getText().strip() + ' '
+            for s in soup.find_all(['h1', 'h2', 'h3']):
+                weighted2 += s.getText().strip() + ' '
+            for s in soup.find_all(['title']):
+                weighted3 += s.getText().strip() + ' '
+
+        return (file_info['url'], text, weighted1, weighted2, weighted3)
 
     # def write_doc_id(self, doc_id_dict):
     #     """
-    #     Writes doc_id_list to doc_id.txt 
+    #     Writes doc_id_list to doc_id.txt
     #     """
     #     with open('./db/doc_id.json', 'wb') as f:
     #         json.dump(doc_id_dict, f)
 
-    def write_to_file(self, index_id, index_dict):
+    def write_to_file(self, index_id: int, index_dict: dict) -> None:
         with open(f'./db/pi{index_id}.txt', 'w') as file:
             for line in sorted(index_dict.items()):
                 file.write(str(line) + '\n')
 
-    def clear_files(self):
+    def clear_files(self) -> None:
         # print("CLEARING INDEX FILES")
         for file in self.walk_files('db'):
             with open(file, 'r+') as file:
@@ -121,7 +135,6 @@ class FileHandler:
 
         except TypeError:
             json.dump(dict, filename)
-
 
     def load_json(self, filename):
         with open(filename, 'r') as f:
