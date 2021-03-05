@@ -1,6 +1,7 @@
 import math
 import re
 import nltk
+from datetime import datetime
 from nltk.corpus import stopwords
 
 class Query:
@@ -17,15 +18,20 @@ class Query:
         self.cached_words = cached_words
 
 
-    def get_query(self, query):
-        # query = input("\nPlease enter the query: ")
+    def get_query(self):
+        query = input("\nPlease enter the query: ")
+
+        # As soon as the query is recieved, get the timestamp
+        start_time = datetime.now()
         self.query_tokens = self.indexer.tokenize(query)
 
         # Removes stop words if it is less than 80% of the query
         filtered_tokens = [t for t in self.query_tokens if t not in self.stop_words]
         if len(filtered_tokens) > len(self.query_tokens) * .2:
             self.query_tokens = filtered_tokens
-        # print(self.query_tokens)
+
+        # Return the start timestamp
+        return start_time
 
     def process_query(self):
         """
@@ -117,8 +123,6 @@ class Query:
                     break
 
     def get_result(self):
-        result = {}
-
         if self.posting:
             # prioritize docs containing the most query terms, then prioritize importance, then cosine similarity
             sorted_tup = sorted(self.posting.items(),
@@ -130,24 +134,15 @@ class Query:
                     found_doc_id = sorted_tup[i][0]
                     # print the url of the found doc id
                     # print(self.doc_id_dict[str(found_doc_id)], found_doc_id, sorted_tup[i][1])
-                    result[str(i)] = self.doc_id_dict[str(found_doc_id)]
-
+                    print(self.doc_id_dict[str(found_doc_id)])
 
                 except IndexError:
                     break
 
             self.posting.clear()
-            result['error_status'] = False
-            result['error_message'] = ''
-
-            return result
 
         else:
             print('No results found')
-            result['error_status'] = True
-            result['error_message'] = 'No results found.'
-
-            return result
 
     @staticmethod
     def fast_eval(line):

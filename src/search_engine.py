@@ -71,11 +71,11 @@ class SearchEngine:
         print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {}\n".format(
             start_time, end_time, process_time))
 
-    def search(self, query):
-        start_time = datetime.now()
+    def search(self):
 
         # Gets query from the user
-        self.query.get_query(query)
+        # Start time is calculated as soon as the query is received.
+        start_time = self.query.get_query()
         # Process the query
         self.query.process_query()
         # Get result of the query
@@ -84,18 +84,13 @@ class SearchEngine:
         end_time = datetime.now()
         process_time = end_time - start_time
 
-        print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {}\n".format(
-            start_time, end_time, process_time))
-
-        # Add the process time to query result, in milliseconds
-        try:
-            result['process_time'] = process_time.total_seconds() * 1000
-
-        except TypeError:
-            pass
-
-        return result
-
+        print("\nStart Time : {}\nEnd Time : {}\nTime elapsed : {} ms\n".format(
+            start_time, end_time, process_time.total_seconds() * 1000))
+    
+    def run(self):
+        while True:
+            self.search()
 
 if __name__ == '__main__':
     search_engine = SearchEngine()
+    search_engine.run()
