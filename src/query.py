@@ -15,6 +15,7 @@ class Query:
 
         self.stop_words = set(stopwords.words('english'))
 
+
     def get_query(self):
         query = input("\nPlease enter the query: ")
         self.query_tokens = self.indexer.tokenize(query)
@@ -120,6 +121,7 @@ class Query:
                     # print the url of the found doc id
                     print(self.doc_id_dict[str(found_doc_id)], found_doc_id, sorted_tup[i][1])
 
+
                 except IndexError:
                     break
 
@@ -140,3 +142,4 @@ class Query:
             scores_dict[int(str_list[i])] = (float(str_list[i + 1]), int(str_list[i + 2]))
 
         return (token, scores_dict)
+

@@ -68,7 +68,6 @@ class FileHandler:
     #         json.dump(doc_id_dict, f)
 
     def write_to_file(self, index_id: int, index_dict: dict) -> None:
-        # Writes the partial index to a txt file
         with open(f'./db/pi{index_id}.txt', 'w') as file:
             for line in sorted(index_dict.items()):
                 file.write(str(line) + '\n')
