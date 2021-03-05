@@ -14,15 +14,22 @@ from urllib.parse import urldefrag
 
 class Indexer:
     def __init__(self, file_handler, file_count_offset):
-        # Download the nltk library before indexing.
+        # Downloads the nltk library before indexing.
         self.download_nltk_library()
+        # This is a dict where the key is the doc id and its value is the URL
         self.doc_id_dict = dict()
+        # The doc id is defaulted to 1
         self.doc_id = 1
+        # The file handler is an object from file_handler.py that handles all
+        # the files.
         self.file_handler = file_handler
 
+        # file_count_offset is the number of documents to parse before
+        # offloading to a partial index. This number should be defaulted to
+        # 10,000 in search_engine.py
         self.file_count_offset = file_count_offset
 
-    def set_up_ssl(self):
+    def set_up_ssl(self) -> None:
         """
         Sets up connection for NLTK library download.
         """
@@ -33,7 +40,7 @@ class Indexer:
         else:
             ssl._create_default_https_context = _create_unverified_https_context
 
-    def download_nltk_library(self):
+    def download_nltk_library(self) -> None:
         """
         Download NLTK libraray.
         Wordnet: Word map that checks for plural / root words
@@ -50,21 +57,20 @@ class Indexer:
             # Download stopwords from nltk library.
             nltk.download('stopwords', download_dir='./nltk_data/')
 
-    def tokenize(self, text):
+    def tokenize(self, text: str) -> [str]:
         """
-        Takes a string of text and tokenize it using NLTK library.
+        Takes a string of text and tokenizes it using NLTK library.
         """
         # Regex tokenizer. Checks for alphanumeric characters.
         re_tokenizer = RegexpTokenizer('[a-zA-Z0-9]+')
         re_tokens = re_tokenizer.tokenize(text.lower())
 
+        # returns a stemmed list of tokens
         stemmer = SnowballStemmer(language='english')
-        tokens = [stemmer.stem(token)
-                  for token in re_tokens if len(token) != 1]
-
+        tokens = [stemmer.stem(token) for token in re_tokens]
         return tokens
 
-    def add_doc_id(self, url):
+    def add_doc_id(self, url: str):
         """
         Appends a new url to the doc_id_list and increments the doc_id
         If the list len is larger than ...., then call write_doc_id function
@@ -72,11 +78,11 @@ class Indexer:
         self.doc_id_dict[str(self.doc_id)] = url 
         self.doc_id += 1
 
-        # if len(self.doc_id_list) > self.file_count_offset:
-        #     self.dump_doc_id(self.doc_id_list)
-        #     self.doc_id_list.clear()
-
-    def compute_word_frequencies(self, token_list):
+    def compute_word_frequencies(self, token_list: [str]) -> {str: int}:
+        """
+        Takes a list of tokens and returns a dict containing the token as a
+        key and its frequency as its value.
+        """
         frequencies = dict()
         # Looping through each token in tokenList: O(n)
         for token in token_list:
@@ -88,34 +94,62 @@ class Indexer:
 
         return frequencies
 
-    def index(self, folder_name, restart=False):
-        # reset the files
+    def index(self, folder_name: str, restart=False) -> None:
+        """
+        This is the main function that indexes the corpus. It writes every
+        word, frequency per document, and importance score to multiple partial
+        indexes.
+        """
+        # Clears all relevant files if the restart boolean is set to true. Will
+        # not happen if the corpus already exists unless the user manually
+        # alters index_status.log
         if restart:
             self.file_handler.clear_files()
 
+        # index_id is the id of the partial index. It goes up after every
+        # offload.
         index_id = 0
+
+        # This is the dict that stores the partial index. It is dumped and
+        # cleared each offload
         index_dict = dict()
+
+        # This is the set of websites (defragged) travelled.
         traversed = set()
 
+        # Loops through each file that ends in '.json' in the corpus
         for file in self.file_handler.walk_files(folder_name, '.json'):
+            # Gets the url, contents, and 3 tiers of important words from the
+            # file. important1 is bold/strong text, important2 are headers, and
+            # important3 is the title text.
             url, normalText, important1, important2, important3 = self.file_handler.parse_file(file)
 
+            # Removes the fragments from the url.
             url = urldefrag(url)[0]
 
-            # don't count if we already traversed the url (defragged)
+            # If the defragged url already exists in the traversed set, it is
+            # removed.
             if url not in traversed:
+                # The contents of the document are tokenized into normalText
                 normalText = self.tokenize(normalText)
+                # The text considered important are tokenized and put into a
+                # set. (We don't count the frequency of important text since we
+                # already got the frequencies in normalText).
                 important1 = set(self.tokenize(important1))
                 important2 = set(self.tokenize(important2))
                 important3 = set(self.tokenize(important3))
 
-                # Find frequencies of each word
+                # Find frequencies of each word and put it in a dict
                 frequencies = self.compute_word_frequencies(normalText)
 
+                # Loop through each word in the dict
                 for word, frequency in frequencies.items():
+
+                    # Calculates the importance score. If the word appears in
+                    # bold or strong text, add 1 to the importance. If the word
+                    # is a header, add 2 and if the word is a title, add 3. The
+                    # max importance score for a word is 6 (if it is all 3).
                     importance = 0
-                    if word not in index_dict:
-                        index_dict[word] = dict()
                     if word in important1:
                         importance += 1
                     if word in important2:
@@ -123,6 +157,13 @@ class Indexer:
                     if word in important3:
                         importance += 3
 
+                    # If the word is not in the partial index, add it. The word
+                    # is the key and its value is an empty dict.
+                    if word not in index_dict:
+                        index_dict[word] = dict()
+                    # The frequency and importance score of the word is added
+                    # to the dict within the partial index.
+                    # i.e. {apple (word): {123 (doc_id): 2 (frequency), 1 (importance}}
                     index_dict[word][self.doc_id] = (frequency, importance)
 
                 # Keep record of doc id and url
@@ -131,15 +172,21 @@ class Indexer:
                 # Add url to the traversed set
                 traversed.add(url)
 
+            # Print a message every 100 documents traversed (just a message for
+            # the user to keep track).
             if self.doc_id % 100 == 0:
                 print(f'Looped through {self.doc_id} pages!')
 
-            # Offload every 10,000 pages
+            # If enough pages have been traversed to reach the offset count
+            # (default 10,000), write the partial index to a txt file and clear
+            # it from memory.
             if self.doc_id % self.file_count_offset == 0:
                 print(
                     f'Looped through {self.doc_id} pages. Offloading to pi{index_id}')
                 self.file_handler.write_to_file(index_id, index_dict)
                 index_dict.clear()
+                # Increments index_id to signify that the new dict will be part
+                # of the next partial index.
                 index_id += 1
                 print('Done with offloading, continuing.')
 
@@ -148,11 +195,15 @@ class Indexer:
         self.file_handler.write_to_file(index_id, index_dict)
         index_dict.clear()
 
-        # dumping doc id list
+        # Writes the doc_id list to a json file.
         self.file_handler.dump_json(self.doc_id_dict, './db/doc_id.json')
         self.doc_id_dict.clear()
 
-    def merge_indexes(self, folder_path):
+    def merge_indexes(self, folder_path: str) -> None:
+        """
+        Merges all partial indexes into one giant index. If the indexes contain
+        the same words, merge their results together.
+        """
         files_to_be_merged = []
 
         # For every partial index files in the folder,

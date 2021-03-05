@@ -14,7 +14,7 @@ class FileHandler:
         if not os.path.isfile('./index_status.log'):
             open('./index_status.log', 'w').close()
  
-    def walk_files(self, folder, file_extension=None):
+    def walk_files(self, folder: str, file_extension=None) -> None:
         """
         Walks through directories and files.
         Checks if files are json files. 
@@ -28,7 +28,7 @@ class FileHandler:
                 else:
                     yield path + '/' + filename
 
-    def parse_file(self, filename):
+    def parse_file(self, filename: str) -> ({}, str, str, str, str):
         """
         Truns json file into str text. 
         Returns both regular text and important text.
@@ -48,6 +48,9 @@ class FileHandler:
             weighted1 = ''
             weighted2 = ''
             weighted3 = ''
+
+            # weighted1 is bold/strong. weighted2 are headers. weighted3 is the
+            # title.
             for s in soup.find_all(['b', 'strong']):
                 weighted1 += s.getText().strip() + ' '
             for s in soup.find_all(['h1', 'h2', 'h3']):
@@ -64,12 +67,13 @@ class FileHandler:
     #     with open('./db/doc_id.json', 'wb') as f:
     #         json.dump(doc_id_dict, f)
 
-    def write_to_file(self, index_id, index_dict):
+    def write_to_file(self, index_id: int, index_dict: dict) -> None:
+        # Writes the partial index to a txt file
         with open(f'./db/pi{index_id}.txt', 'w') as file:
             for line in sorted(index_dict.items()):
                 file.write(str(line) + '\n')
 
-    def clear_files(self):
+    def clear_files(self) -> None:
         # print("CLEARING INDEX FILES")
         for file in self.walk_files('db'):
             with open(file, 'r+') as file:
