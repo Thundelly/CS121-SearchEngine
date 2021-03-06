@@ -7,7 +7,7 @@
 
 ## Project directory
 ---
-
+`
 root_directory
 |
 |__ db
@@ -28,3 +28,4 @@ root_directory
     |__ search_engine.py
 |__ .gitignore
 |__ README.md
+`
