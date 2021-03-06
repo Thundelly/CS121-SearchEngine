@@ -6,5 +6,5 @@ nltk_data
 *.zip
 *pyc
 
-indexer_test.py
+test.py
 !requirements.txt

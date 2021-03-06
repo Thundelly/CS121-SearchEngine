@@ -1,10 +1,11 @@
 import math
 import re
 import nltk
+from datetime import datetime
 from nltk.corpus import stopwords
 
 class Query:
-    def __init__(self, file_handler, indexer):
+    def __init__(self, file_handler, indexer, cached_words):
         self.fp_dict = file_handler.load_json('./db/fp_locations.json')
         self.doc_id_dict = file_handler.load_json('./db/doc_id.json')
         self.final_index = open('./db/index.txt')
@@ -14,17 +15,23 @@ class Query:
         self.posting = dict()
 
         self.stop_words = set(stopwords.words('english'))
+        self.cached_words = cached_words
 
 
     def get_query(self):
         query = input("\nPlease enter the query: ")
+
+        # As soon as the query is recieved, get the timestamp
+        start_time = datetime.now()
         self.query_tokens = self.indexer.tokenize(query)
 
         # Removes stop words if it is less than 80% of the query
-        filtered_tokens = [t for t in self.query_tokens if t not in self.stop_words]
-        if len(filtered_tokens) > len(self.query_tokens) * .2:
-            self.query_tokens = filtered_tokens
-        print(self.query_tokens)
+        # filtered_tokens = [t for t in self.query_tokens if t not in self.stop_words]
+        #  if len(filtered_tokens) > len(self.query_tokens) * .2:
+        #      self.query_tokens = filtered_tokens
+
+        # Return the start timestamp
+        return start_time
 
     def process_query(self):
         """
@@ -48,10 +55,17 @@ class Query:
             # Loop through each token in the query
             for token, tf in token_freq.items():
                 try:
-                    # Get the postings for the token from the index
-                    fp = self.fp_dict[token]
-                    self.final_index.seek(fp)
-                    token_posting = Query.fast_eval(self.final_index.readline())[1]
+
+                    # Check if the word is already cached. If so, load that word
+                    if token in self.cached_words:
+                        token_posting = self.cached_words[token]
+
+                    # Look for the word in the index if the word is not already cached.
+                    else:
+                        # Get the postings for the token from the index
+                        fp = self.fp_dict[token]
+                        self.final_index.seek(fp)
+                        token_posting = Query.fast_eval(self.final_index.readline())[1]
 
                     # Get the scores and put them into document_term_scores
                     for doc_id, score in token_posting.items():
@@ -119,8 +133,8 @@ class Query:
                 try:
                     found_doc_id = sorted_tup[i][0]
                     # print the url of the found doc id
-                    print(self.doc_id_dict[str(found_doc_id)], found_doc_id, sorted_tup[i][1])
-
+                    # print(self.doc_id_dict[str(found_doc_id)], found_doc_id, sorted_tup[i][1])
+                    print(self.doc_id_dict[str(found_doc_id)])
 
                 except IndexError:
                     break
