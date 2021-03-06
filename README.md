@@ -5,10 +5,26 @@
 - Completed search engine (terminal gui).
 - Uses file pointer to each words in the corpus.
 
+## Project directory
+---
 
-## Usage Guide
-
-- Install node.js.
-- Install yarn package manager.
-- Install all the dependencies by running "yarn install"
-- Run the website server by running "yarn start"
+root_directory
+|
+|__ db
+    |
+    |__ index.txt
+    |__ fp_locations.json
+    |__ doc_id.json
+|
+|__ DEV
+|__ nltk_data
+|__ src
+    |
+    |__ api.py
+    |__ endpoints.py
+    |__ file_handler.py
+    |__ indexer.py
+    |__ query.py
+    |__ search_engine.py
+|__ .gitignore
+|__ README.md
