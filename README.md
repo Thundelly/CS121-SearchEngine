@@ -2,8 +2,9 @@
 
 ## Current progress
 ---
-- Completed search engine (terminal gui).
-- Uses file pointer to each words in the corpus.
+- Completed search engine development.
+- Completed optimization by caching words.
+
 
 ## Project directory
 ---
@@ -29,3 +30,15 @@ root_directory
 |__ .gitignore
 |__ README.md
 ```
+
+### Dependencies
+
+- bs4
+- lxml
+- nltk
+- ssl
+
+(Flask API version)
+- flask
+- flask_restful
+- flask_cors
