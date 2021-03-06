@@ -5,6 +5,8 @@
 - Completed search engine development.
 - Completed optimization by caching words.
 
+(Flask API version)
+- Completed implementing Flask API to handle HTTP request / response.
 
 ## Project directory
 ---
