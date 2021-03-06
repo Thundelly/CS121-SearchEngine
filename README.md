@@ -1,11 +1,19 @@
 # CS121-SearchEngine
 
+## How to run
+---
+(Text based version)
+- run `python3 src/search_engine.py`
+
+(Web GUI based version)
+- run `python3 src/api.py`
+
 ## Current progress
 ---
 - Completed search engine development.
 - Completed optimization by caching words.
 
-(Flask API version)
+(Web GUI -- Flask API)
 - Completed implementing Flask API to handle HTTP request / response.
 
 ## Project directory
@@ -31,6 +39,7 @@ root_directory
     |__ search_engine.py
 |__ .gitignore
 |__ README.md
+|__ index_status.log
 ```
 
 ### Dependencies
@@ -40,7 +49,7 @@ root_directory
 - nltk
 - ssl
 
-(Flask API version)
+(Web GUI -- Flask API)
 - flask
 - flask_restful
 - flask_cors
