@@ -53,3 +53,8 @@ root_directory
 - flask
 - flask_restful
 - flask_cors
+
+## Assignment Report
+
+[CS121 Assignment 3 MS3 Report.pdf](https://github.com/Thundelly/CS121-SearchEngine/files/9897764/CS121.Assignment.3.MS3.Report.pdf)
+
